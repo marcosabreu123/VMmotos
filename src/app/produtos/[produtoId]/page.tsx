@@ -13,6 +13,7 @@ import { podeVerCustos } from "@/lib/permissoes";
 import { BotaoAlternarAtivo } from "@/components/BotaoAlternarAtivo";
 import { atualizarProdutoAction, alterarAtivoProdutoAction } from "../actions";
 import type { TipoMovimentacao } from "@prisma/client";
+import { nicho } from "@/config/nicho";
 
 const TIPOS_ENTRADA: TipoMovimentacao[] = ["ENTRADA_ESTOQUE", "ENTRADA_COMPRA", "ENTRADA_MANUAL"];
 const TIPOS_VENDA: TipoMovimentacao[] = ["SAIDA_VENDA", "DEVOLUCAO", "ESTORNO_CANCELAMENTO"];
@@ -121,7 +122,7 @@ export default async function EditarProdutoPage({
               </div>
             )}
             <div className="card p-4">
-              <p className="label-caps mb-1">Fornecedor</p>
+              <p className="label-caps mb-1">{nicho.termos.fornecedor.singular}</p>
               <p className="text-xl font-bold">{produto.fornecedor?.nome ?? "—"}</p>
             </div>
           </div>

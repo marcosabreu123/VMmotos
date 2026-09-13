@@ -57,7 +57,7 @@ export function EntradaEstoqueForm({ produtoInicial }: { produtoInicial?: Produt
 
     const nome = pecaNova.nome.trim();
     if (!nome) {
-      setPecaNova({ ...pecaNova, erro: "Informe o nome da peça." });
+      setPecaNova({ ...pecaNova, erro: `Informe o nome da ${nicho.termos.produto.singular.toLowerCase()}.` });
       return;
     }
 
@@ -121,15 +121,15 @@ export function EntradaEstoqueForm({ produtoInicial }: { produtoInicial?: Produt
 
   function salvar() {
     if (itens.length === 0) {
-      setMensagem("Adicione ao menos um produto à entrada.");
+      setMensagem(`Adicione ao menos uma ${nicho.termos.produto.singular.toLowerCase()} à entrada.`);
       return;
     }
     if (itens.some((item) => item.quantidade <= 0)) {
-      setMensagem("Informe uma quantidade válida para cada produto.");
+      setMensagem(`Informe uma quantidade válida para cada ${nicho.termos.produto.singular.toLowerCase()}.`);
       return;
     }
     if (itens.some((item) => reaisParaCentavos(item.custoUnitarioStr || "0") <= 0)) {
-      setMensagem("Informe o custo unitário de cada produto.");
+      setMensagem(`Informe o custo unitário de cada ${nicho.termos.produto.singular.toLowerCase()}.`);
       return;
     }
 
@@ -158,7 +158,7 @@ export function EntradaEstoqueForm({ produtoInicial }: { produtoInicial?: Produt
   return (
     <div className="flex flex-col gap-6">
       <div className="card flex flex-col gap-3 p-5">
-        <p className="label">Fornecedor</p>
+        <p className="label">{nicho.termos.fornecedor.singular}</p>
         {fornecedor ? (
           <div className="flex items-center justify-between">
             <span className="font-medium">{fornecedor.nome}</span>
@@ -167,7 +167,7 @@ export function EntradaEstoqueForm({ produtoInicial }: { produtoInicial?: Produt
             </button>
           </div>
         ) : (
-          <FornecedorAutocomplete onSelecionar={(f) => setFornecedor({ id: f.id, nome: f.nome })} placeholder="Opcional — buscar fornecedor..." />
+          <FornecedorAutocomplete onSelecionar={(f) => setFornecedor({ id: f.id, nome: f.nome })} placeholder={`Opcional — buscar ${nicho.termos.fornecedor.singular.toLowerCase()}...`} />
         )}
 
         <div className="mt-2">
@@ -190,7 +190,7 @@ export function EntradaEstoqueForm({ produtoInicial }: { produtoInicial?: Produt
           onSelecionar={adicionarProduto}
           placeholder={`Buscar ${nicho.termos.produto.singular.toLowerCase()} ou digitar uma nova...`}
           aoNaoEncontrar={{
-            rotulo: "Cadastrar peça nova:",
+            rotulo: `Cadastrar ${nicho.termos.produto.singular.toLowerCase()} nova:`,
             acao: (termo) => setPecaNova({ nome: termo, precoVendaStr: "", erro: null }),
           }}
         />
@@ -201,7 +201,7 @@ export function EntradaEstoqueForm({ produtoInicial }: { produtoInicial?: Produt
             acontecer. */}
         {pecaNova && (
           <div className="card p-4" style={{ borderColor: "var(--accent-active-border)" }}>
-            <p className="label-caps mb-3">Peça nova</p>
+            <p className="label-caps mb-3">{nicho.termos.produto.singular} nova</p>
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
@@ -265,7 +265,7 @@ export function EntradaEstoqueForm({ produtoInicial }: { produtoInicial?: Produt
         )}
 
         {itens.length === 0 ? (
-          <p className="state-empty">Nenhum produto adicionado ainda.</p>
+          <p className="state-empty">Nenhuma {nicho.termos.produto.singular.toLowerCase()} adicionada ainda.</p>
         ) : (
           <ul className="flex flex-col gap-3">
             {itens.map((item) => (

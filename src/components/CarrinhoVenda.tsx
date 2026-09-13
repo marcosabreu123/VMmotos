@@ -226,7 +226,7 @@ export function CarrinhoVenda({
         <input
           value={termo}
           onChange={(evento) => setTermo(evento.target.value)}
-          placeholder="Buscar por nome, marca, SKU ou código de barras..."
+          placeholder={`Buscar por nome, ${nicho.termos.marca.toLowerCase()}, código ou código de barras...`}
           className="input mb-4"
           autoComplete="off"
         />
@@ -238,7 +238,7 @@ export function CarrinhoVenda({
             </div>
           ) : resultados.length === 0 ? (
             <p className="state-empty">
-              {termo.trim() ? "Nenhum produto encontrado." : "Nenhum produto disponível nesta categoria."}
+              {termo.trim() ? `Nenhuma ${nicho.termos.produto.singular.toLowerCase()} encontrada.` : `Nenhuma ${nicho.termos.produto.singular.toLowerCase()} disponível nesta categoria.`}
             </p>
           ) : (
             resultados.map((produto) => (

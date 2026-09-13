@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { importarProdutosAction, type EstadoImportacao } from "@/app/ferramentas/importar/actions";
+import { nicho } from "@/config/nicho";
 
 const ESTADO_INICIAL: EstadoImportacao = {};
 
@@ -21,7 +22,7 @@ export function ImportarProdutosForm() {
         {estado.erro && <p className="text-sm" style={{ color: "var(--danger)" }}>{estado.erro}</p>}
 
         <button type="submit" disabled={pendente} className="btn btn-primary w-fit">
-          {pendente ? <span className="spinner" /> : "Importar produtos"}
+          {pendente ? <span className="spinner" /> : `Importar ${nicho.termos.produto.plural.toLowerCase()}`}
         </button>
       </form>
 

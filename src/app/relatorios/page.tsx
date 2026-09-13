@@ -8,6 +8,7 @@ import { faturamentoPorPeriodo, maisVendidos } from "@/lib/relatorios";
 import { clientesQueMaisCompraram } from "@/lib/dashboard";
 import { produtosSemEstoque, produtosAbaixoDoMinimo, lotesValidadeProxima } from "@/lib/estoque";
 import { centavosParaReais } from "@/lib/money";
+import { nicho } from "@/config/nicho";
 
 export default async function RelatoriosPage() {
   const usuario = await requireLeitura("relatorios");
@@ -64,13 +65,13 @@ export default async function RelatoriosPage() {
             <div className="flex flex-col gap-2">
               {semEstoque.length > 0 && (
                 <Link href="/produtos?filtro=sem-estoque" className="card card-interactive flex items-center justify-between p-4">
-                  <span>Produtos sem estoque</span>
+                  <span>{nicho.termos.produto.plural} sem estoque</span>
                   <span className="badge badge-danger">{semEstoque.length}</span>
                 </Link>
               )}
               {estoqueBaixo.length > 0 && (
                 <Link href="/produtos?filtro=estoque-baixo" className="card card-interactive flex items-center justify-between p-4">
-                  <span>Produtos com estoque baixo</span>
+                  <span>{nicho.termos.produto.plural} com estoque baixo</span>
                   <span className="badge badge-danger">{estoqueBaixo.length}</span>
                 </Link>
               )}
@@ -110,14 +111,14 @@ export default async function RelatoriosPage() {
         </section>
 
         <section>
-          <h2 className="mb-3 text-lg font-semibold">Produtos mais vendidos</h2>
+          <h2 className="mb-3 text-lg font-semibold">{nicho.termos.produto.plural} mais vendidas</h2>
           {produtosMaisVendidos.length === 0 ? (
             <p className="state-empty">Ainda não há vendas registradas.</p>
           ) : (
             <ul className="flex flex-col gap-2">
               {produtosMaisVendidos.map((linha, indice) => (
                 <li key={linha.produto?.id ?? indice} className="card flex items-center justify-between p-4">
-                  <span className="font-medium">{linha.produto?.nome ?? "Produto removido"}</span>
+                  <span className="font-medium">{linha.produto?.nome ?? `${nicho.termos.produto.singular} removida`}</span>
                   <span className="flex items-center gap-4">
                     <span style={{ color: "var(--muted)" }}>{linha.quantidadeVendida} un.</span>
                     <span className="font-semibold">{centavosParaReais(linha.receitaCentavos)}</span>

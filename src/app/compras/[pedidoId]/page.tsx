@@ -7,6 +7,7 @@ import { LABEL_TIPO_MOVIMENTACAO } from "@/lib/estoque";
 import { centavosParaReais } from "@/lib/money";
 import { PedidoAcoes } from "./PedidoAcoes";
 import type { StatusPedido } from "@prisma/client";
+import { nicho } from "@/config/nicho";
 
 const LABEL_STATUS: Record<StatusPedido, string> = {
   RASCUNHO: "Rascunho",
@@ -55,7 +56,7 @@ export default async function PedidoDetalhePage({
 
       <section className="card mb-6 grid grid-cols-1 gap-4 p-5 sm:grid-cols-2">
         <div>
-          <p className="label-caps mb-1">Fornecedor</p>
+          <p className="label-caps mb-1">{nicho.termos.fornecedor.singular}</p>
           <p>{pedido.fornecedor.nome}</p>
           {pedido.fornecedor.telefone && (
             <p className="text-sm" style={{ color: "var(--muted)" }}>

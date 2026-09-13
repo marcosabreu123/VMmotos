@@ -7,6 +7,7 @@ import { formatQuantidadeEstoque, unidadeEstoque } from "@/lib/unidadeEstoque";
 import { centavosParaReais } from "@/lib/money";
 import { podeVerCustos } from "@/lib/permissoes";
 import { LoteAcoes } from "./LoteAcoes";
+import { nicho } from "@/config/nicho";
 
 const BADGE_VALIDADE: Record<string, string> = {
   vencido: "badge-danger",
@@ -53,7 +54,7 @@ export default async function LoteDetalhePage({
 
       <section className="card mb-6 grid grid-cols-1 gap-4 p-5 sm:grid-cols-2">
         <div>
-          <p className="label-caps mb-1">Produto</p>
+          <p className="label-caps mb-1">{nicho.termos.produto.singular}</p>
           <p>{lote.produto.nome}</p>
         </div>
         {podeVerCusto && (

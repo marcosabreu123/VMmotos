@@ -118,7 +118,7 @@ export default async function RelatorioClientesPage({ searchParams }: { searchPa
         <input type="date" name="dataInicio" defaultValue={params.dataInicio} className="input" placeholder="Início (personalizado)" />
         <input type="date" name="dataFim" defaultValue={params.dataFim} className="input" placeholder="Fim (personalizado)" />
         <input name="categoria" defaultValue={params.categoria} placeholder="Categoria preferida" className="input" />
-        <input name="marca" defaultValue={params.marca} placeholder="Marca preferida" className="input" />
+        <input name="marca" defaultValue={params.marca} placeholder={`${nicho.termos.marca} preferido`} className="input" />
         <input type="number" step="0.01" name="valorMinimo" defaultValue={params.valorMinimo} placeholder="Gasto mínimo (R$)" className="input" />
         <input type="number" step="0.01" name="valorMaximo" defaultValue={params.valorMaximo} placeholder="Gasto máximo (R$)" className="input" />
         <input type="number" name="numeroComprasMinimo" defaultValue={params.numeroComprasMinimo} placeholder="Nº mínimo de compras" className="input" />
@@ -182,9 +182,9 @@ export default async function RelatorioClientesPage({ searchParams }: { searchPa
                   <th className="p-2">Nº compras</th>
                   <th className="p-2">Ticket médio</th>
                   <th className="p-2">Última compra</th>
-                  <th className="p-2">Produto favorito</th>
+                  <th className="p-2">{nicho.termos.produto.singular} favorita</th>
                   <th className="p-2">Categoria</th>
-                  <th className="p-2">Marca</th>
+                  <th className="p-2">{nicho.termos.marca}</th>
                 </tr>
               </thead>
               <tbody>
@@ -241,7 +241,7 @@ export default async function RelatorioClientesPage({ searchParams }: { searchPa
                   <th className="p-2">Última compra</th>
                   <th className="p-2">Dias sem comprar</th>
                   <th className="p-2">Total histórico</th>
-                  <th className="p-2">Produto favorito</th>
+                  <th className="p-2">{nicho.termos.produto.singular} favorita</th>
                   <th className="p-2">Ação</th>
                 </tr>
               </thead>

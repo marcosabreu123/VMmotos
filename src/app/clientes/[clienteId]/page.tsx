@@ -10,6 +10,7 @@ import { centavosParaReais } from "@/lib/money";
 import { BotaoAlternarAtivo } from "@/components/BotaoAlternarAtivo";
 import { alterarAtivoClienteAction } from "../actions";
 import { ClienteObservacao } from "./ClienteObservacao";
+import { nicho } from "@/config/nicho";
 
 export default async function ClienteDetalhePage({
   params,
@@ -109,11 +110,11 @@ export default async function ClienteDetalhePage({
             <p className="text-sm">{indicadores.primeiraCompra?.toLocaleDateString("pt-BR")}</p>
           </div>
           <div className="card p-4">
-            <p className="label-caps mb-1">Produto favorito</p>
+            <p className="label-caps mb-1">{nicho.termos.produto.singular} favorita</p>
             <p className="text-sm">{indicadores.produtoFavorito ?? "—"}</p>
           </div>
           <div className="card p-4">
-            <p className="label-caps mb-1">Marca preferida</p>
+            <p className="label-caps mb-1">{nicho.termos.marca} preferido</p>
             <p className="text-sm">{indicadores.marcaPreferida ?? "—"}</p>
           </div>
           <div className="card p-4">

@@ -92,7 +92,7 @@ export function EditarEntradaEstoqueForm({ entrada }: { entrada: EntradaParaEdic
   return (
     <div className="flex flex-col gap-6">
       <div className="card flex flex-col gap-3 p-5">
-        <p className="label">Fornecedor</p>
+        <p className="label">{nicho.termos.fornecedor.singular}</p>
         {fornecedor ? (
           <div className="flex items-center justify-between">
             <span className="font-medium">{fornecedor.nome}</span>
@@ -119,7 +119,7 @@ export function EditarEntradaEstoqueForm({ entrada }: { entrada: EntradaParaEdic
       </div>
 
       <div className="card flex flex-col gap-4 p-5">
-        <p className="label">Produtos</p>
+        <p className="label">{nicho.termos.produto.plural}</p>
         <ul className="flex flex-col gap-3">
           {itens.map((item) => (
             <li

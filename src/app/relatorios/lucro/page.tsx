@@ -8,6 +8,7 @@ import { GraficoBarras, GraficoLinha, GraficoPizza } from "@/components/charts/G
 import { indicadoresLucro, detalhamentoLucro, resolverPeriodo, type ChavePeriodo, type Regime, type AgrupamentoLucro } from "@/lib/lucro";
 import { despesasPorCategoria } from "@/lib/relatorio-despesas";
 import { centavosParaReais } from "@/lib/money";
+import { nicho } from "@/config/nicho";
 
 type SearchParams = {
   periodo?: ChavePeriodo;
@@ -29,8 +30,8 @@ const LABEL_PERIODO: Record<ChavePeriodo, string> = {
 const LABEL_AGRUPAMENTO: Record<AgrupamentoLucro, string> = {
   produto: "Produto",
   categoria: "Categoria",
-  marca: "Marca",
-  tipoVenda: "Tipo de produto",
+  marca: nicho.termos.marca,
+  tipoVenda: `Tipo de ${nicho.termos.produto.singular.toLowerCase()}`,
   formaPagamento: "Forma de pagamento",
   vendedor: "Vendedor",
   dia: "Dia",
@@ -175,7 +176,7 @@ export default async function RelatorioLucroPage({ searchParams }: { searchParam
           />
         </div>
         <div className="card p-5">
-          <h2 className="label-caps mb-3">Produtos mais lucrativos</h2>
+          <h2 className="label-caps mb-3">{nicho.termos.produto.plural} mais lucrativas</h2>
           <GraficoBarras dados={porProduto.slice(0, 5).map((linha) => ({ label: linha.label, valor: centavosParaNumero(linha.lucroBruto) }))} />
         </div>
         <div className="card p-5">

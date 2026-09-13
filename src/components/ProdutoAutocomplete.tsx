@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { centavosParaReais } from "@/lib/money";
+import { nicho } from "@/config/nicho";
 
 export type ProdutoBusca = {
   id: string;
@@ -14,7 +15,7 @@ export type ProdutoBusca = {
 
 export function ProdutoAutocomplete({
   onSelecionar,
-  placeholder = "Buscar por nome, marca, SKU ou código de barras...",
+  placeholder = `Buscar por nome, ${nicho.termos.marca.toLowerCase()}, código ou código de barras...`,
   aoNaoEncontrar,
 }: {
   onSelecionar: (produto: ProdutoBusca) => void;

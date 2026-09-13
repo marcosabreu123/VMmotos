@@ -8,6 +8,7 @@ import {
   transferirDemonstracaoPorProdutoAction,
   registrarSaidaDemonstracaoPorProdutoAction,
 } from "./actions";
+import { nicho } from "@/config/nicho";
 
 type Modo = "ajuste" | "transferencia" | "saida_demonstracao";
 
@@ -77,7 +78,7 @@ export function AjusteForm({ produtoInicial }: { produtoInicial?: ProdutoBusca }
   return (
     <div className="card flex flex-col gap-4 p-6">
       <div>
-        <label className="label">Produto *</label>
+        <label className="label">{nicho.termos.produto.singular} *</label>
         {produto ? (
           <div className="flex items-center justify-between rounded-xl border p-3" style={{ borderColor: "var(--border)" }}>
             <span>
@@ -98,7 +99,7 @@ export function AjusteForm({ produtoInicial }: { produtoInicial?: ProdutoBusca }
       <div>
         <label className="label">Tipo de operação</label>
         <select className="input" value={modo} onChange={(evento) => setModo(evento.target.value as Modo)}>
-          <option value="ajuste">Ajuste / baixa de produto (perda, defeito, brinde, contagem)</option>
+          <option value="ajuste">Ajuste / baixa de {nicho.termos.produto.singular.toLowerCase()} (perda, defeito, brinde, contagem)</option>
           <option value="transferencia">Transferência venda ↔ demonstracao</option>
           <option value="saida_demonstracao">Saída de demonstracao (uso/descarte)</option>
         </select>

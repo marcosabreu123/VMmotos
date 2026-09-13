@@ -166,7 +166,7 @@ export function PedidoForm({
   return (
     <div className="flex flex-col gap-6">
       <div className="card flex flex-col gap-3 p-5">
-        <p className="label">Fornecedor *</p>
+        <p className="label">{nicho.termos.fornecedor.singular} *</p>
         {fornecedor ? (
           <div className="flex items-center justify-between">
             <span className="font-medium">{fornecedor.nome}</span>
@@ -181,7 +181,7 @@ export function PedidoForm({
 
       <div className="card flex flex-col gap-4 p-5">
         <p className="label">Itens do pedido *</p>
-        <ProdutoAutocomplete onSelecionar={adicionarProduto} placeholder="Buscar produto para adicionar ao pedido..." />
+        <ProdutoAutocomplete onSelecionar={adicionarProduto} placeholder={`Buscar ${nicho.termos.produto.singular.toLowerCase()} para adicionar ao pedido...`} />
 
         {itens.length === 0 ? (
           <p className="state-empty">Nenhum item adicionado ainda.</p>
