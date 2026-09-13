@@ -2,14 +2,7 @@ import type { SessaoUsuario } from "@/lib/types";
 import { assistenteConfig } from "./config";
 import { dataHojeISO } from "./datas";
 import { nicho } from "@/config/nicho";
-
-const LABEL_PAPEL: Record<SessaoUsuario["papel"], string> = {
-  OWNER: "Dono",
-  GERENTE: "Gerente",
-  SELLER: "Vendedor",
-  ESTOQUE: "Estoque",
-  CONSULTA: "Consulta",
-};
+import { LABEL_PAPEL } from "@/lib/permissoes";
 
 /** Lista as categorias configuradas, quando houver, para o modelo reconhecê-las. */
 function categoriasConhecidas(): string {

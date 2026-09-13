@@ -4,13 +4,14 @@ import { melhorEnvioConfig } from "@/lib/integracoes/melhorEnvio/config";
 import { testarConexao, ErroOAuthMelhorEnvio } from "@/lib/integracoes/melhorEnvio/oauth";
 import { ErroMelhorEnvio } from "@/lib/integracoes/melhorEnvio/client";
 import { registrarAuditoria } from "@/lib/auditoria";
+import { ehAdministrador } from "@/lib/permissoes";
 
 export async function POST() {
   const usuario = await usuarioAtual();
   if (!usuario) {
     return NextResponse.json({ erro: "Não autenticado." }, { status: 401 });
   }
-  if (usuario.papel !== "OWNER") {
+  if (!ehAdministrador(usuario.papel)) {
     return NextResponse.json({ erro: "Apenas o Dono pode testar a integração." }, { status: 403 });
   }
 

@@ -5,7 +5,7 @@ import { AppShell } from "@/components/AppShell";
 import { resumoDashboard } from "@/lib/dashboard";
 import { resumoRepasses } from "@/lib/oficina/consultas";
 import { centavosParaReais } from "@/lib/money";
-import { podeLer, type Recurso } from "@/lib/permissoes";
+import { podeLer, type Recurso, ehAdministrador } from "@/lib/permissoes";
 import { nicho } from "@/config/nicho";
 import type { SessaoUsuario } from "@/lib/types";
 import {
@@ -61,7 +61,7 @@ function saudacaoPorHora(hora: number): string {
 }
 
 function podeVer(usuario: SessaoUsuario, item: Item): boolean {
-  if (item.somenteDono && usuario.papel !== "OWNER") return false;
+  if (item.somenteDono && !ehAdministrador(usuario.papel)) return false;
   if (item.recurso && !podeLer(usuario, item.recurso)) return false;
   return true;
 }

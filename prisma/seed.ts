@@ -5,19 +5,20 @@ import { nicho } from "../src/config/nicho";
 const prisma = new PrismaClient();
 
 /**
- * Cria um usuário OWNER se ele ainda não existir.
+ * Cria um acesso de administração se ele ainda não existir.
  *
  * Nunca mexe em usuário existente: rodar o seed de novo num banco que já está
  * em uso não pode ressuscitar uma senha antiga nem sobrescrever a que o dono
  * trocou.
  */
-async function garantirOwner(params: {
+async function garantirAcesso(params: {
   rotulo: string;
   email: string;
   senha: string;
   nome: string;
+  papel: "ADMIN" | "OWNER";
 }) {
-  const { rotulo, email, senha, nome } = params;
+  const { rotulo, email, senha, nome, papel } = params;
 
   const existente = await prisma.usuario.findUnique({ where: { email } });
   if (existente) {
@@ -26,25 +27,29 @@ async function garantirOwner(params: {
   }
 
   const senhaHash = await bcrypt.hash(senha, 10);
-  await prisma.usuario.create({ data: { nome, email, senhaHash, papel: "OWNER" } });
+  await prisma.usuario.create({ data: { nome, email, senhaHash, papel } });
   console.log(`${rotulo}: criado — ${email} / senha: ${senha}`);
 }
 
 async function main() {
-  // Dois acessos OWNER desde o início, a pedido do cliente:
-  //   - admin: nosso, para manutenção futura;
-  //   - dono: o da loja, que é quem cadastra os demais usuários depois.
-  // Só o papel OWNER escreve em "usuarios" (ver src/lib/permissoes.ts), então
-  // é isso que garante que ninguém mais consiga criar acesso no sistema.
-  await garantirOwner({
+  // Dois acessos de administração desde o início, a pedido do cliente:
+  //   - ADMIN: conta técnica, para manutenção futura;
+  //   - OWNER: o dono da loja (exibido como "Sócio"), que é quem cadastra os
+  //     demais usuários depois.
+  // Os dois têm o mesmo acesso; existem separados para não se confundirem na
+  // tela nem na auditoria. Só eles escrevem em "usuarios" (ver
+  // src/lib/permissoes.ts), e é isso que garante que mais ninguém abra acesso.
+  await garantirAcesso({
     rotulo: "Admin (manutenção)",
+    papel: "ADMIN",
     email: process.env.SEED_ADMIN_EMAIL ?? "admin@vmmotopecas.com.br",
     senha: process.env.SEED_ADMIN_SENHA ?? "troque-esta-senha",
     nome: process.env.SEED_ADMIN_NOME ?? "Administrador do Sistema",
   });
 
-  await garantirOwner({
-    rotulo: "Dono da loja",
+  await garantirAcesso({
+    rotulo: "Dono da loja (sócio)",
+    papel: "OWNER",
     email: process.env.SEED_OWNER_EMAIL ?? "dono@empresa.local",
     senha: process.env.SEED_OWNER_SENHA ?? "troque-esta-senha",
     nome: process.env.SEED_OWNER_NOME ?? "Dono do Negócio",

@@ -4,6 +4,8 @@ import { PageHeader } from "@/components/PageHeader";
 import { CarrinhoVenda } from "@/components/CarrinhoVenda";
 import { buscarVendaPorId } from "@/lib/vendas";
 import { estoqueTotalProduto } from "@/lib/produtos";
+import { listarMecanicos } from "@/lib/oficina/mecanicos";
+import { listarTiposServico } from "@/lib/oficina/tiposServico";
 import type { ItemCarrinhoCliente } from "@/components/CarrinhoVenda";
 
 export default async function NovaVendaPage({
@@ -41,10 +43,16 @@ export default async function NovaVendaPage({
     }
   }
 
+  const [mecanicos, tiposServico] = await Promise.all([listarMecanicos(), listarTiposServico()]);
+
   return (
     <AppShell usuario={usuario} wide>
       <PageHeader title="Nova venda" />
-      <CarrinhoVenda itensIniciais={itensIniciais} />
+      <CarrinhoVenda
+        itensIniciais={itensIniciais}
+        mecanicos={mecanicos.map((m) => ({ id: m.id, nome: m.nome, socioOficina: m.socioOficina }))}
+        tiposServico={tiposServico.map((t) => ({ id: t.id, nome: t.nome }))}
+      />
     </AppShell>
   );
 }

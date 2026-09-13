@@ -1291,3 +1291,81 @@ a.resumo-card:active {
   border-color: var(--accent-active-border);
   background: var(--surface-muted);
 }
+
+/* ---------- Mão de obra dentro da venda ---------- */
+.bloco-moto {
+  padding: 14px;
+  margin-bottom: 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-muted);
+}
+
+.linha-servico {
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-muted);
+}
+
+/* Para onde vai o dinheiro do serviço, à vista, antes de fechar a venda. */
+.divisao-servico {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  font-size: 13.5px;
+}
+.divisao-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.divisao-item strong {
+  color: var(--accent);
+}
+
+.input-percentual {
+  width: 62px;
+  text-align: right;
+  border: 1px solid var(--border);
+  background: var(--background);
+  border-radius: 8px;
+  padding: 5px 8px;
+  font-size: 13.5px;
+  color: var(--foreground);
+  outline: none;
+}
+.input-percentual:focus {
+  border-color: var(--accent-active-border);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.link-discreto,
+.link-perigo {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-size: 13.5px;
+  font-weight: 500;
+  border-bottom: 1px solid transparent;
+}
+.link-discreto {
+  color: var(--muted);
+}
+.link-discreto:hover {
+  color: var(--foreground);
+  border-bottom-color: var(--accent-active-border);
+}
+/* Destrutivo no coral de --danger, nunca no vermelho da marca. */
+.link-perigo {
+  color: var(--danger);
+  margin-left: auto;
+}
+.link-perigo:hover {
+  border-bottom-color: var(--danger);
+}

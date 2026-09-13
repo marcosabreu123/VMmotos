@@ -13,6 +13,7 @@ import {
   ErroVenda,
   type ItemCarrinho,
   type DadosItemDevolucao,
+  type ServicoVenda,
 } from "@/lib/vendas";
 import { registrarUsoInsumos, ErroInsumo, type ItemInsumoUso } from "@/lib/insumos";
 import type { FormaPagamento } from "@prisma/client";
@@ -29,6 +30,10 @@ export type DadosFinalizarVenda = {
   clienteId?: string | null;
   dataVenda?: string | null; // "YYYY-MM-DD"; vazio/omitido usa o momento atual
   valorPago?: number; // centavos; omitido = total (pago integralmente)
+  /** Mão de obra lançada junto das peças. */
+  servicos?: ServicoVenda[];
+  /** Moto atendida. Null = venda sem moto, ou moto sem placa. */
+  motoId?: string | null;
 };
 
 export async function finalizarVendaAction(dados: DadosFinalizarVenda): Promise<ResultadoFinalizarVenda> {
@@ -44,12 +49,16 @@ export async function finalizarVendaAction(dados: DadosFinalizarVenda): Promise<
       usuarioId: usuario.id,
       dataHora: dados.dataVenda ? new Date(`${dados.dataVenda}T00:00:00`) : undefined,
       valorPago: dados.valorPago,
+      servicos: dados.servicos,
+      motoId: dados.motoId,
     });
 
     revalidatePath("/estoque");
     revalidatePath("/relatorios");
     revalidatePath("/produtos");
     revalidatePath("/clientes");
+    revalidatePath("/oficina/mecanicos");
+    revalidatePath("/motos");
 
     return { ok: true, vendaId: venda.id, total: venda.total };
   } catch (erro) {

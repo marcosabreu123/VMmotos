@@ -2,16 +2,9 @@ import { requireOwner } from "@/lib/auth";
 import { AppShell } from "@/components/AppShell";
 import { PageHeader } from "@/components/PageHeader";
 import { listarUsuarios } from "@/lib/usuarios";
+import { LABEL_PAPEL } from "@/lib/permissoes";
 import { UsuarioForm } from "./UsuarioForm";
 import { ToggleAtivoButton } from "./ToggleAtivoButton";
-
-const LABEL_PAPEL: Record<string, string> = {
-  OWNER: "Dono",
-  GERENTE: "Gerente",
-  SELLER: "Vendedor",
-  ESTOQUE: "Estoque",
-  CONSULTA: "Consulta",
-};
 
 export default async function UsuariosPage() {
   const usuarioLogado = await requireOwner();

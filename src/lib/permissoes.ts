@@ -32,9 +32,39 @@ const TUDO_ESCRITA: Record<Recurso, Nivel> = {
   oficina: "escrita",
 };
 
+/**
+ * Como cada papel se chama na tela.
+ *
+ * Ficava repetido em quatro arquivos, e mudar um rótulo significava lembrar
+ * de mudar nos outros três. Agora é um lugar só.
+ *
+ * ADMIN e OWNER têm o mesmo acesso e se distinguem por quem são: ADMIN é a
+ * conta técnica de quem mantém o sistema; OWNER é o dono da loja, que é
+ * sócio do negócio.
+ */
+export const LABEL_PAPEL: Record<Papel, string> = {
+  ADMIN: "Admin",
+  OWNER: "Sócio",
+  GERENTE: "Gerente",
+  SELLER: "Colaborador",
+  ESTOQUE: "Estoque",
+  CONSULTA: "Consulta",
+};
+
+/**
+ * Acesso de administração: o dono da loja e a conta técnica.
+ *
+ * Use isto em vez de comparar com "OWNER" na mão — foi assim que o sistema
+ * inteiro passou a tratar ADMIN corretamente quando o papel foi criado.
+ */
+export function ehAdministrador(papel: Papel): boolean {
+  return papel === "OWNER" || papel === "ADMIN";
+}
+
 // Matriz simples recurso × papel × nível — não é uma ACL genérica, é o
 // suficiente para uma loja única com poucos papéis fixos.
 const MATRIZ: Record<Papel, Record<Recurso, Nivel>> = {
+  ADMIN: TUDO_ESCRITA,
   OWNER: TUDO_ESCRITA,
   GERENTE: { ...TUDO_ESCRITA, usuarios: "nenhum" },
   SELLER: {

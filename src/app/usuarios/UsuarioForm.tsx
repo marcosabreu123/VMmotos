@@ -2,6 +2,7 @@
 
 import { useActionState, useRef } from "react";
 import { criarUsuarioAction, type EstadoUsuario } from "./actions";
+import { LABEL_PAPEL } from "@/lib/permissoes";
 
 const ESTADO_INICIAL: EstadoUsuario = {};
 
@@ -44,11 +45,14 @@ export function UsuarioForm() {
             Permissão
           </label>
           <select id="papel" name="papel" defaultValue="SELLER" className="input">
-            <option value="SELLER">Vendedor</option>
-            <option value="ESTOQUE">Estoque</option>
-            <option value="GERENTE">Gerente</option>
-            <option value="CONSULTA">Consulta</option>
-            <option value="OWNER">Dono</option>
+            <option value="SELLER">{LABEL_PAPEL.SELLER}</option>
+            <option value="ESTOQUE">{LABEL_PAPEL.ESTOQUE}</option>
+            <option value="GERENTE">{LABEL_PAPEL.GERENTE}</option>
+            <option value="CONSULTA">{LABEL_PAPEL.CONSULTA}</option>
+            <option value="OWNER">{LABEL_PAPEL.OWNER}</option>
+            {/* ADMIN não é oferecido aqui de propósito: é a conta técnica de
+                manutenção, criada pelo seed, não um papel para o dono
+                distribuir no dia a dia. */}
           </select>
         </div>
       </div>

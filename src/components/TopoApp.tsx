@@ -6,6 +6,7 @@ import { logoutAction } from "@/app/actions";
 import { IconHome, IconLogout } from "./icons";
 import { nicho } from "@/config/nicho";
 import type { SessaoUsuario } from "@/lib/types";
+import { LABEL_PAPEL } from "@/lib/permissoes";
 
 /**
  * Topo do app — substituiu o menu lateral a pedido do dono.
@@ -15,14 +16,6 @@ import type { SessaoUsuario } from "@/lib/types";
  * palavra "Início" junto do ícone de propósito — casinha sozinha é símbolo
  * que nem todo mundo lê, e quem opera esta loja não é usuário de sistema.
  */
-
-const LABEL_PAPEL: Record<SessaoUsuario["papel"], string> = {
-  OWNER: "Dono",
-  GERENTE: "Gerente",
-  SELLER: "Vendedor",
-  ESTOQUE: "Estoque",
-  CONSULTA: "Consulta",
-};
 
 function iniciaisDoNome(nome: string): string {
   const partes = nome.trim().split(/\s+/);

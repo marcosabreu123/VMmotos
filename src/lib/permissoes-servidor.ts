@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { requireUser } from "./auth";
-import { podeLer, podeEscrever, ErroPermissao, type Recurso } from "./permissoes";
+import { podeLer, podeEscrever, ErroPermissao, type Recurso, ehAdministrador } from "./permissoes";
 import type { SessaoUsuario } from "./types";
 
 export { ErroPermissao };
@@ -33,7 +33,7 @@ export async function requireLeitura(recurso: Recurso): Promise<SessaoUsuario> {
  */
 export async function requireDono(): Promise<SessaoUsuario> {
   const usuario = await requireUser();
-  if (usuario.papel !== "OWNER") {
+  if (!ehAdministrador(usuario.papel)) {
     throw new ErroPermissao("Só o dono pode administrar este cadastro.");
   }
   return usuario;

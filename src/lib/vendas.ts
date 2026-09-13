@@ -28,6 +28,8 @@ export type ItemCarrinho = {
  * garantia.
  */
 export type ServicoVenda = {
+  /** Tipo escolhido do catálogo, quando houver. */
+  tipoServicoId?: string | null;
   descricao: string;
   /** centavos */
   valor: number;
@@ -252,6 +254,7 @@ export async function registrarVenda(dados: DadosVenda) {
       const linha = await tx.itemVendaServico.create({
         data: {
           vendaId: venda.id,
+          tipoServicoId: servico.tipoServicoId ?? null,
           descricao: servico.descricao.trim(),
           valor: servico.valor,
         },

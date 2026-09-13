@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "./db";
 import { getSession } from "./session";
 import type { SessaoUsuario } from "./types";
+import { ehAdministrador } from "./permissoes";
 
 export type ResultadoLogin = { ok: true } | { ok: false; erro: string };
 
@@ -51,7 +52,7 @@ export async function requireUser(): Promise<SessaoUsuario> {
 
 export async function requireOwner(): Promise<SessaoUsuario> {
   const usuario = await requireUser();
-  if (usuario.papel !== "OWNER") {
+  if (!ehAdministrador(usuario.papel)) {
     redirect("/dashboard");
   }
   return usuario;

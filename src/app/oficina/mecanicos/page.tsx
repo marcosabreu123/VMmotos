@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { socioDaOficina } from "@/lib/oficina/mecanicos";
 import { MecanicoForm } from "./MecanicoForm";
 import { MecanicoLinha, type MecanicoLinhaProps } from "./MecanicoLinha";
+import { ehAdministrador } from "@/lib/permissoes";
 
 /**
  * Mão de obra — cadastro e administração dos mecânicos.
@@ -14,7 +15,7 @@ import { MecanicoLinha, type MecanicoLinhaProps } from "./MecanicoLinha";
  */
 export default async function MecanicosPage() {
   const usuario = await requireLeitura("oficina");
-  const ehDono = usuario.papel === "OWNER";
+  const ehDono = ehAdministrador(usuario.papel);
 
   const [mecanicos, agrupado, socio] = await Promise.all([
     prisma.mecanico.findMany({

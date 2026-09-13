@@ -12,6 +12,11 @@ generator client {
 }
 
 enum Papel {
+  /// Conta técnica de manutenção (quem desenvolve o sistema). Mesmo acesso do
+  /// sócio; existe separada para não se confundir com o dono da loja na tela
+  /// nem na auditoria.
+  ADMIN
+  /// O dono da VM — sócio do negócio.
   OWNER
   GERENTE
   SELLER
@@ -703,12 +708,19 @@ model Moto {
 model ItemVendaServico {
   id        String @id @default(cuid())
   vendaId   String
+  /// Tipo escolhido do catálogo. Opcional: serviço digitado à mão continua
+  /// valendo, e tipo apagado no futuro não pode levar junto a venda.
+  tipoServicoId String?
+  /// Nome do serviço congelado no momento da venda. Existe mesmo havendo
+  /// tipoServicoId: renomear o tipo depois não pode reescrever o que foi
+  /// vendido.
   descricao String
   /// centavos — valor combinado com o cliente, digitado na venda.
   valor     Int
 
-  venda    Venda              @relation(fields: [vendaId], references: [id])
-  repasses RepasseMaoDeObra[]
+  venda       Venda              @relation(fields: [vendaId], references: [id])
+  tipoServico TipoServico?       @relation(fields: [tipoServicoId], references: [id])
+  repasses    RepasseMaoDeObra[]
 
   @@index([vendaId])
 }
@@ -771,4 +783,20 @@ model FechamentoRepasse {
 
   @@unique([mecanicoId, inicio, fim])
   @@index([inicio, fim])
+}
+
+/// Tipos de serviço da oficina ("Troca de óleo", "Revisão", "Troca de relação").
+///
+/// É só um catálogo de NOMES, para o dono escolher em vez de digitar toda vez.
+/// Não tem preço: o valor do serviço é negociado caso a caso e digitado na
+/// venda. Pode ser criado na hora, dentro da própria venda.
+model TipoServico {
+  id        String   @id @default(cuid())
+  nome      String   @unique
+  ativo     Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  itensVenda ItemVendaServico[]
+
+  @@index([ativo])
 }

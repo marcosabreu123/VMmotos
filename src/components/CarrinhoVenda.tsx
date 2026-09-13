@@ -10,6 +10,13 @@ import { centavosParaReais, reaisParaCentavos } from "@/lib/money";
 import type { ClienteBusca } from "./ClienteAutocomplete";
 import type { FormaPagamento } from "@/lib/types";
 import { finalizarVendaAction } from "@/app/vendas/actions";
+import {
+  MaoDeObraVenda,
+  type MecanicoOpcao,
+  type TipoServicoOpcao,
+  type ServicoLocal,
+  type DadosMoto,
+} from "./MaoDeObraVenda";
 import { nicho } from "@/config/nicho";
 
 export type ItemCarrinhoCliente = {
@@ -27,7 +34,15 @@ function hojeISO() {
   return new Date().toISOString().slice(0, 10);
 }
 
-export function CarrinhoVenda({ itensIniciais }: { itensIniciais?: ItemCarrinhoCliente[] }) {
+export function CarrinhoVenda({
+  itensIniciais,
+  mecanicos,
+  tiposServico,
+}: {
+  itensIniciais?: ItemCarrinhoCliente[];
+  mecanicos: MecanicoOpcao[];
+  tiposServico: TipoServicoOpcao[];
+}) {
   const [categoria, setCategoria] = useState<string>("");
   const [termo, setTermo] = useState("");
   const [resultados, setResultados] = useState<ProdutoVenda[]>([]);
@@ -41,6 +56,8 @@ export function CarrinhoVenda({ itensIniciais }: { itensIniciais?: ItemCarrinhoC
   // só troca se for outro método; continua editável normalmente.
   const [formaPagamento, setFormaPagamento] = useState<FormaPagamento | null>("PIX");
   const [descontoTotalStr, setDescontoTotalStr] = useState("");
+  const [servicos, setServicos] = useState<ServicoLocal[]>([]);
+  const [moto, setMoto] = useState<DadosMoto>({ motoId: null, placaExibicao: null, semPlaca: false });
   const [acrescimoTotalStr, setAcrescimoTotalStr] = useState("");
   const [dataVenda, setDataVenda] = useState(hojeISO());
   const [pagouTudo, setPagouTudo] = useState(true);
@@ -81,10 +98,18 @@ export function CarrinhoVenda({ itensIniciais }: { itensIniciais?: ItemCarrinhoC
     () => itens.reduce((soma, item) => soma + item.produto.precoVenda * item.quantidade, 0),
     [itens]
   );
+  // Mão de obra entra no total da venda, mas NÃO entra na base do desconto:
+  // o valor do serviço é do pessoal da oficina, não do dono, então não é dele
+  // para dar de desconto. O servidor confere a mesma regra.
+  const totalServicos = useMemo(
+    () => servicos.reduce((soma, s) => soma + reaisParaCentavos(s.valorStr || "0"), 0),
+    [servicos]
+  );
+
   const descontoTotal = reaisParaCentavos(descontoTotalStr || "0");
   const acrescimoTotal = reaisParaCentavos(acrescimoTotalStr || "0");
-  const descontoInvalido = subtotal > 0 && descontoTotal > subtotal - acrescimoTotal;
-  const total = Math.max(0, subtotal - descontoTotal + acrescimoTotal);
+  const descontoInvalido = descontoTotal > subtotal;
+  const total = Math.max(0, subtotal + totalServicos - descontoTotal + acrescimoTotal);
   const valorPago = pagouTudo ? total : reaisParaCentavos(valorPagoStr || "0");
   const saldoDevedor = Math.max(0, total - valorPago);
   const valorPagoInvalido = !pagouTudo && (valorPago < 0 || valorPago > total);
@@ -111,8 +136,15 @@ export function CarrinhoVenda({ itensIniciais }: { itensIniciais?: ItemCarrinhoC
   }
 
   function finalizarVenda() {
-    if (itens.length === 0) {
-      setMensagem({ tipo: "erro", texto: "Adicione ao menos um produto ao carrinho." });
+    // Venda só de mão de obra é rotina na oficina (o cliente traz a peça, ou é
+    // só serviço), então carrinho vazio só barra quando não há serviço.
+    if (itens.length === 0 && servicos.length === 0) {
+      setMensagem({ tipo: "erro", texto: "Adicione ao menos uma peça ou um serviço." });
+      return;
+    }
+    const servicoSemDescricao = servicos.find((s) => !s.descricao.trim());
+    if (servicoSemDescricao) {
+      setMensagem({ tipo: "erro", texto: "Escolha o tipo ou descreva o serviço realizado." });
       return;
     }
     if (!formaPagamento) {
@@ -120,7 +152,10 @@ export function CarrinhoVenda({ itensIniciais }: { itensIniciais?: ItemCarrinhoC
       return;
     }
     if (descontoInvalido) {
-      setMensagem({ tipo: "erro", texto: "O desconto não pode ser maior que o total da venda." });
+      setMensagem({
+        tipo: "erro",
+        texto: "O desconto não pode passar do valor das peças — mão de obra não entra em desconto.",
+      });
       return;
     }
     if (valorPagoInvalido) {
@@ -142,6 +177,13 @@ export function CarrinhoVenda({ itensIniciais }: { itensIniciais?: ItemCarrinhoC
         clienteId: cliente?.id ?? null,
         dataVenda: dataVenda !== hojeISO() ? dataVenda : null,
         valorPago: pagouTudo ? undefined : valorPago,
+        motoId: moto.motoId,
+        servicos: servicos.map((s) => ({
+          tipoServicoId: s.tipoServicoId,
+          descricao: s.descricao.trim(),
+          valor: reaisParaCentavos(s.valorStr || "0"),
+          beneficiarios: s.beneficiarios,
+        })),
       });
 
       if (!resultado.ok) {
@@ -158,6 +200,8 @@ export function CarrinhoVenda({ itensIniciais }: { itensIniciais?: ItemCarrinhoC
       setDataVenda(hojeISO());
       setPagouTudo(true);
       setValorPagoStr("");
+      setServicos([]);
+      setMoto({ motoId: null, placaExibicao: null, semPlaca: false });
       setAtualizarContador((atual) => atual + 1);
     });
   }
@@ -209,7 +253,11 @@ export function CarrinhoVenda({ itensIniciais }: { itensIniciais?: ItemCarrinhoC
         <ClienteSelector cliente={cliente} onSelecionar={setCliente} onRemover={() => setCliente(null)} />
 
         {itens.length === 0 ? (
-          <p className="state-empty">Carrinho vazio. Adicione um produto para começar.</p>
+          <p className="state-empty">
+            {servicos.length > 0
+              ? "Sem peça nesta venda — só mão de obra."
+              : "Carrinho vazio. Adicione uma peça ou lance a mão de obra abaixo."}
+          </p>
         ) : (
           <ul className="venda-carrinho-lista">
             {itens.map((item) => (
@@ -222,6 +270,15 @@ export function CarrinhoVenda({ itensIniciais }: { itensIniciais?: ItemCarrinhoC
             ))}
           </ul>
         )}
+
+        <MaoDeObraVenda
+          mecanicos={mecanicos}
+          tiposIniciais={tiposServico}
+          servicos={servicos}
+          onChange={setServicos}
+          moto={moto}
+          onMotoChange={setMoto}
+        />
 
         <div>
           <label className="label" htmlFor="dataVenda">
@@ -304,9 +361,15 @@ export function CarrinhoVenda({ itensIniciais }: { itensIniciais?: ItemCarrinhoC
 
         <div className="flex flex-col gap-1">
           <div className="resumo-linha">
-            <span>Subtotal</span>
+            <span>{totalServicos > 0 ? "Peças" : "Subtotal"}</span>
             <span>{centavosParaReais(subtotal)}</span>
           </div>
+          {totalServicos > 0 && (
+            <div className="resumo-linha">
+              <span>Mão de obra</span>
+              <span>{centavosParaReais(totalServicos)}</span>
+            </div>
+          )}
           <div className="resumo-linha">
             <span>Desconto</span>
             <span>-{centavosParaReais(descontoTotal)}</span>
