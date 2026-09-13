@@ -116,8 +116,8 @@ const DIA_A_DIA: Item[] = [
   {
     href: "/oficina/mecanicos",
     icone: <IconRepasse {...TAMANHO_ICONE} />,
-    titulo: "Mão de obra",
-    ajuda: "Mecânicos e tipos de serviço",
+    titulo: "Serviços e mão de obra",
+    ajuda: "Tipos de serviço e mecânicos",
     recurso: "oficina",
   },
   {

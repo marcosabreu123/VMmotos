@@ -44,7 +44,7 @@ export default async function ComissoesPage() {
         title="Comissões"
         action={
           <Link href="/oficina/mecanicos" className="btn btn-outline">
-            Mecânicos e serviços
+            Serviços e mão de obra
           </Link>
         }
       />

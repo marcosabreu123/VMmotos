@@ -3,17 +3,21 @@ import { AppShell } from "@/components/AppShell";
 import { PageHeader } from "@/components/PageHeader";
 import { prisma } from "@/lib/db";
 import { socioDaOficina } from "@/lib/oficina/mecanicos";
-import { MecanicoForm } from "./MecanicoForm";
+import { CadastroMecanico } from "./CadastroMecanico";
 import { MecanicoLinha, type MecanicoLinhaProps } from "./MecanicoLinha";
 import { TiposServico } from "./TiposServico";
 import { listarTiposServico } from "@/lib/oficina/tiposServico";
 import { ehAdministrador } from "@/lib/permissoes";
 
 /**
- * Mão de obra — cadastro e administração dos mecânicos.
+ * Serviços e mão de obra.
  *
- * Lista inclui arquivados, porque quem administra precisa poder reativar
- * alguém que voltou a trabalhar na loja.
+ * Duas listas na mesma tela, nesta ordem: os tipos de serviço (que mudam com
+ * frequência e são o que se vem consultar) e os mecânicos (que se cadastram
+ * uma vez e ficam).
+ *
+ * A lista de mecânicos inclui arquivados, porque quem administra precisa
+ * poder reativar alguém que voltou a trabalhar na loja.
  */
 export default async function MecanicosPage() {
   const usuario = await requireLeitura("oficina");
@@ -54,7 +58,7 @@ export default async function MecanicosPage() {
 
   return (
     <AppShell usuario={usuario}>
-      <PageHeader title="Mão de obra" />
+      <PageHeader title="Serviços e mão de obra" />
 
       {temAlgum && !socio && (
         <p className="state-error mb-6" role="alert">
@@ -64,17 +68,20 @@ export default async function MecanicosPage() {
         </p>
       )}
 
-      {ehDono && (
-        <section className="mb-8">
-          <h2 className="label-caps mb-3">Novo mecânico</h2>
-          <MecanicoForm />
-        </section>
-      )}
-
-      <TiposServico iniciais={tipos.map((t) => ({ id: t.id, nome: t.nome, valorSugerido: t.valorSugerido }))} podeEditar={ehDono} />
+      {/* Serviços primeiro: é a lista que muda com mais frequência e a que se
+          vem consultar aqui. Mecânico se cadastra uma vez e fica. */}
+      <TiposServico
+        iniciais={tipos.map((t) => ({ id: t.id, nome: t.nome, valorSugerido: t.valorSugerido }))}
+        podeEditar={ehDono}
+      />
 
       <section>
         <h2 className="label-caps mb-3">Mecânicos</h2>
+
+        {/* Cadastrar mecânico é privilégio do dono e da conta de manutenção, e
+            fica atrás de uma opção: acontece quando alguém entra na oficina,
+            não toda semana. */}
+        {ehDono && <CadastroMecanico />}
 
         {linhas.length === 0 ? (
           <p className="state-empty">
