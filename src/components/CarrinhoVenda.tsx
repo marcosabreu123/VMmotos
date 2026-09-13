@@ -194,7 +194,10 @@ export function CarrinhoVenda({
       setMensagem({ tipo: "sucesso", texto: `Venda registrada! Total: ${centavosParaReais(resultado.total)}` });
       setItens([]);
       setCliente(null);
-      setFormaPagamento(null);
+      // Volta ao padrão, não para vazio: a tela abre com PIX escolhido, e
+      // zerar aqui fazia a segunda venda em diante parar em "Selecione a
+      // forma de pagamento" — um erro que a primeira venda não dava.
+      setFormaPagamento("PIX");
       setDescontoTotalStr("");
       setAcrescimoTotalStr("");
       setDataVenda(hojeISO());
@@ -275,7 +278,13 @@ export function CarrinhoVenda({
           mecanicos={mecanicos}
           tiposIniciais={tiposServico}
           servicos={servicos}
-          onChange={setServicos}
+          onChange={(novos) => {
+            // Limpa o "Venda registrada!" da venda anterior. Sem isto, o aviso
+            // de sucesso ficava na tela enquanto o dono montava a próxima —
+            // dando a impressão de que esta já tinha sido salva.
+            setMensagem(null);
+            setServicos(novos);
+          }}
           moto={moto}
           onMotoChange={setMoto}
         />
