@@ -1,5 +1,5 @@
 {
-  "name": "erp-base",
+  "name": "vm-moto-pecas",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -10,7 +10,8 @@
     "postinstall": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "vercel-build": "prisma migrate deploy && next build"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
