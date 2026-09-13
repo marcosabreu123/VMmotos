@@ -1,0 +1,611 @@
+// Fase 2: Supabase Postgres. DATABASE_URL usa o pooler (transaction mode) para
+// queries; DIRECT_URL usa a conexão direta (session mode), exigida pelo Prisma
+// para rodar migrations no Supabase.
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Papel {
+  OWNER
+  GERENTE
+  SELLER
+  ESTOQUE
+  CONSULTA
+}
+
+model Usuario {
+  id        String   @id @default(cuid())
+  nome      String
+  email     String   @unique
+  senhaHash String
+  papel     Papel    @default(SELLER)
+  ativo     Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  vendas           Venda[]
+  vendasCanceladas Venda[]               @relation("VendaCanceladaPor")
+  movimentacoes    MovimentacaoEstoque[]
+  devolucoes       Devolucao[]
+  registrosAuditoria RegistroAuditoria[]
+  despesas           Despesa[]
+  despesasCanceladas Despesa[] @relation("DespesaCanceladaPor")
+  entradasEstoque    EntradaEstoque[]
+  assistenteConversas   AssistenteConversa[]
+  assistenteInteracoes  AssistenteInteracao[]
+  integracoesMelhorEnvioConectadas IntegracaoMelhorEnvio[]
+  melhorEnvioOAuthStates           MelhorEnvioOAuthState[]
+  cotacoesFrete                    CotacaoFrete[]
+}
+
+model RegistroAuditoria {
+  id         String   @id @default(cuid())
+  usuarioId  String
+  acao       String // ex.: "venda.cancelar", "produto.atualizar", "usuario.criar"
+  entidade   String // ex.: "Venda", "Produto", "Usuario"
+  entidadeId String?
+  detalhes   String?
+  valorAnterior Int? // centavos — quando a ação altera um valor numérico auditável
+  valorNovo     Int? // centavos
+  createdAt  DateTime @default(now())
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id])
+
+  @@index([createdAt])
+  @@index([entidade, entidadeId])
+}
+
+model Fornecedor {
+  id          String   @id @default(cuid())
+  nome        String
+  documento   String?
+  telefone    String?
+  email       String?
+  endereco    String?
+  observacoes String?
+  ativo       Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  produtos Produto[]
+  pedidos  PedidoDeCompra[]
+  despesas Despesa[]
+  entradasEstoque EntradaEstoque[]
+}
+
+enum TipoVenda {
+  UNIDADE
+  FRACIONADO
+}
+
+model Produto {
+  id              String    @id @default(cuid())
+  nome            String
+  marca           String
+  categoria       String
+  medida          Int? // rotulo/unidade definidos em src/config/nicho.ts
+  sku             String    @unique
+  codigoBarras    String?   @unique
+  precoCustoRef   Int // centavos — referência informativa; custo real por lote vem do rateio de frete
+  precoVenda      Int // centavos
+  fornecedorId    String?
+  fotoPath        String? // caminho relativo servido em /uploads/... — ver lib/storage.ts
+  atributoA       String? // atributo livre do nicho — ver src/config/nicho.ts
+  atributoB       String? // atributo livre do nicho — ver src/config/nicho.ts
+  tipoVenda       TipoVenda @default(UNIDADE) // FRACIONADO = venda por fração (granel, corte, decant)
+  estoqueMinimo   Int       @default(0)
+  ativo           Boolean   @default(true)
+  curvaAbc        String? // "A" | "B" | "C" — curva ABC, calculada sob demanda
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  fornecedor    Fornecedor?           @relation(fields: [fornecedorId], references: [id])
+  lotes         Lote[]
+  itensVenda    ItemVenda[]
+  itensPedido   ItemPedidoDeCompra[]
+  itensEntradaEstoque ItemEntradaEstoque[]
+  movimentacoes MovimentacaoEstoque[]
+
+  @@index([categoria])
+  @@index([atributoA])
+  @@index([atributoB])
+}
+
+enum StatusLote {
+  ATIVO
+  ESGOTADO
+  BLOQUEADO
+}
+
+model Lote {
+  id                        String     @id @default(cuid())
+  produtoId                 String
+  numero                    String // lote do fabricante ou identificador interno
+  dataValidade              DateTime?
+  custoUnitario             Int // centavos — custo do fornecedor, sem frete
+  freteRateado              Int        @default(0) // centavos — rateio de frete (Fase 2.x)
+  custoReal                 Int // centavos = custoUnitario + freteRateado
+  quantidadeInicialVenda    Int
+  quantidadeAtualVenda      Int // estoque vendável (unidades; ml fracionado só na Fase 2.x)
+  quantidadeInicialDemonstracao Int        @default(0)
+  quantidadeAtualDemonstracao   Int        @default(0) // pool de demonstracao, separado do pool de venda
+  status                    StatusLote @default(ATIVO)
+  itemPedidoId              String?    @unique
+  itemEntradaEstoqueId      String?    @unique
+  createdAt                 DateTime   @default(now())
+
+  produto            Produto               @relation(fields: [produtoId], references: [id])
+  itemPedido         ItemPedidoDeCompra?   @relation(fields: [itemPedidoId], references: [id])
+  itemEntradaEstoque ItemEntradaEstoque?   @relation(fields: [itemEntradaEstoqueId], references: [id])
+  itensVenda         ItemVenda[]
+  movimentacoes      MovimentacaoEstoque[]
+
+  @@index([produtoId, dataValidade])
+}
+
+enum StatusPedido {
+  RASCUNHO
+  ENVIADO
+  RECEBIDO
+  CANCELADO
+}
+
+model PedidoDeCompra {
+  id              String       @id @default(cuid())
+  fornecedorId    String
+  dataPedido      DateTime     @default(now())
+  dataRecebimento DateTime?
+  valorFrete      Int          @default(0) // centavos — rateado entre os itens na Fase 2.x
+  status          StatusPedido @default(RASCUNHO)
+  observacoes     String?
+  createdAt       DateTime     @default(now())
+
+  fornecedor    Fornecedor           @relation(fields: [fornecedorId], references: [id])
+  itens         ItemPedidoDeCompra[]
+  movimentacoes MovimentacaoEstoque[]
+}
+
+model ItemPedidoDeCompra {
+  id                 String @id @default(cuid())
+  pedidoCompraId     String
+  produtoId          String
+  quantidade         Int // unidades recebidas — base do rateio de frete (Fase 2.x)
+  quantidadeDemonstracao Int    @default(0)
+  custoUnitario      Int // centavos, preço do fornecedor por unidade, sem frete
+
+  pedido  PedidoDeCompra @relation(fields: [pedidoCompraId], references: [id])
+  produto Produto        @relation(fields: [produtoId], references: [id])
+  lote    Lote?
+}
+
+enum FormaPagamento {
+  DINHEIRO
+  CARTAO_CREDITO
+  CARTAO_DEBITO
+  PIX
+}
+
+enum StatusVenda {
+  CONCLUIDA
+  CANCELADA
+  DEVOLVIDA_PARCIAL
+  DEVOLVIDA_TOTAL
+}
+
+model Cliente {
+  id          String   @id @default(cuid())
+  nome        String
+  telefone    String?
+  email       String?
+  observacoes String?
+  ativo       Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  vendas      Venda[]
+}
+
+// Linha única (singleton) — lida via findFirst() com fallback pros defaults do
+// código; segmento de cliente nunca é gravado, sempre computado em tempo de leitura.
+model ConfiguracaoSegmentacaoClientes {
+  id                      String   @id @default(cuid())
+  diasInativo             Int      @default(90)
+  diasRecuperado          Int      @default(30)
+  valorAltoTicketCentavos Int      @default(30000)
+  valorVipCentavos        Int      @default(100000)
+  comprasRecorrente       Int      @default(3)
+  updatedAt               DateTime @updatedAt
+}
+
+model Venda {
+  id                 String         @id @default(cuid())
+  dataHora           DateTime       @default(now())
+  usuarioId          String
+  clienteId          String?
+  formaPagamento     FormaPagamento
+  descontoTotal      Int            @default(0) // centavos
+  acrescimoTotal     Int            @default(0) // centavos — taxa de cartão, frete cobrado à parte etc.
+  subtotal           Int // centavos, soma dos itens antes do desconto/acréscimo geral
+  total              Int // centavos, subtotal - descontoTotal + acrescimoTotal
+  valorPago          Int            @default(0) // centavos — vai sendo incrementado até alcançar "total"; abaixo disso é débito do cliente
+  status             StatusVenda    @default(CONCLUIDA)
+  observacoes        String?
+  motivoCancelamento String?
+  canceladoPorId     String?
+  canceladoEm        DateTime?
+
+  usuario       Usuario               @relation(fields: [usuarioId], references: [id])
+  cliente       Cliente?              @relation(fields: [clienteId], references: [id])
+  canceladoPor  Usuario?              @relation("VendaCanceladaPor", fields: [canceladoPorId], references: [id])
+  itens         ItemVenda[]
+  movimentacoes MovimentacaoEstoque[]
+  devolucoes    Devolucao[]
+  insumos       ItemVendaInsumo[]
+
+  @@index([dataHora])
+  @@index([status])
+}
+
+model ItemVenda {
+  id                String @id @default(cuid())
+  vendaId           String
+  produtoId         String
+  loteId            String
+  quantidade        Int // unidades (ml fracionado só na Fase 2.x)
+  precoUnitario     Int // centavos — snapshot do preço de venda no momento da venda
+  descontoItem      Int    @default(0) // centavos
+  custoRealSnapshot Int // centavos — copiado de lote.custoReal no momento da venda
+  subtotalItem      Int // centavos
+
+  venda   Venda   @relation(fields: [vendaId], references: [id])
+  produto Produto @relation(fields: [produtoId], references: [id])
+  lote    Lote    @relation(fields: [loteId], references: [id])
+
+  itensDevolvidos ItemDevolucao[]
+}
+
+model Devolucao {
+  id        String   @id @default(cuid())
+  vendaId   String
+  usuarioId String
+  motivo    String
+  createdAt DateTime @default(now())
+
+  venda   Venda           @relation(fields: [vendaId], references: [id])
+  usuario Usuario         @relation(fields: [usuarioId], references: [id])
+  itens   ItemDevolucao[]
+}
+
+model ItemDevolucao {
+  id             String  @id @default(cuid())
+  devolucaoId    String
+  itemVendaId    String
+  quantidade     Int
+  retornaEstoque Boolean @default(true)
+
+  devolucao Devolucao @relation(fields: [devolucaoId], references: [id])
+  itemVenda ItemVenda @relation(fields: [itemVendaId], references: [id])
+}
+
+enum TipoMovimentacao {
+  ENTRADA_COMPRA
+  ENTRADA_MANUAL
+  ENTRADA_ESTOQUE
+  SAIDA_VENDA
+  SAIDA_DEMONSTRACAO
+  TRANSFERENCIA_DEMONSTRACAO
+  AJUSTE_POSITIVO
+  AJUSTE_NEGATIVO
+  PERDA_VENCIMENTO
+  PERDA_DEFEITO
+  BRINDE
+  DEVOLUCAO
+  ESTORNO_CANCELAMENTO
+}
+
+enum PoolEstoque {
+  VENDA
+  DEMONSTRACAO
+}
+
+model MovimentacaoEstoque {
+  id               String           @id @default(cuid())
+  produtoId        String
+  loteId           String?
+  tipo             TipoMovimentacao
+  pool             PoolEstoque      @default(VENDA)
+  quantidade       Int // sempre positivo; o sentido (entrada/saída) vem do "tipo"
+  usuarioId        String
+  vendaId          String?
+  pedidoCompraId   String?
+  entradaEstoqueId String?
+  observacao       String?
+  createdAt        DateTime         @default(now())
+
+  produto        Produto         @relation(fields: [produtoId], references: [id])
+  lote           Lote?           @relation(fields: [loteId], references: [id])
+  usuario        Usuario         @relation(fields: [usuarioId], references: [id])
+  venda          Venda?          @relation(fields: [vendaId], references: [id])
+  pedido         PedidoDeCompra? @relation(fields: [pedidoCompraId], references: [id])
+  entradaEstoque EntradaEstoque? @relation(fields: [entradaEstoqueId], references: [id])
+
+  @@index([produtoId, createdAt])
+}
+
+// ---------- Entrada de Estoque (fluxo simplificado — substitui Pedido de Compra na UI) ----------
+
+model EntradaEstoque {
+  id           String   @id @default(cuid())
+  fornecedorId String?
+  dataEntrada  DateTime @default(now())
+  valorFrete   Int      @default(0) // centavos — valor total informado, rateado uniformemente por unidade
+  observacoes  String?
+  usuarioId    String
+  createdAt    DateTime @default(now())
+
+  fornecedor    Fornecedor?           @relation(fields: [fornecedorId], references: [id])
+  usuario       Usuario               @relation(fields: [usuarioId], references: [id])
+  itens         ItemEntradaEstoque[]
+  movimentacoes MovimentacaoEstoque[]
+}
+
+model ItemEntradaEstoque {
+  id               String @id @default(cuid())
+  entradaEstoqueId String
+  produtoId        String
+  quantidade       Int
+  custoUnitario    Int // centavos, sem frete — freteRateado/custoReal ficam só no Lote gerado
+
+  entradaEstoque EntradaEstoque @relation(fields: [entradaEstoqueId], references: [id])
+  produto        Produto        @relation(fields: [produtoId], references: [id])
+  lote           Lote?
+}
+
+// ---------- Despesas (Fase 5.1) ----------
+
+model CategoriaDespesa {
+  id        String   @id @default(cuid())
+  nome      String   @unique
+  padrao    Boolean  @default(false)
+  ativo     Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  despesas Despesa[]
+}
+
+enum StatusDespesa {
+  PENDENTE
+  PAGO
+  CANCELADO
+}
+
+enum FormaPagamentoDespesa {
+  DINHEIRO
+  PIX
+  CARTAO_DEBITO
+  CARTAO_CREDITO
+  BOLETO
+  TRANSFERENCIA
+  OUTRO
+}
+
+enum ClassificacaoDespesa {
+  FIXA
+  VARIAVEL
+  ADMINISTRATIVA
+  COMERCIAL
+  OPERACIONAL
+  MARKETING
+  EXCEPCIONAL
+}
+
+enum TipoRecorrencia {
+  NENHUMA
+  SEMANAL
+  MENSAL
+  TRIMESTRAL
+  SEMESTRAL
+  ANUAL
+}
+
+enum StatusRecorrencia {
+  ATIVA
+  PAUSADA
+  ENCERRADA
+}
+
+model Despesa {
+  id                  String                  @id @default(cuid())
+  descricao           String
+  categoriaId         String
+  fornecedorId        String? // beneficiário — reaproveita Fornecedor, sem entidade nova
+  valor               Int // centavos
+  dataDespesa         DateTime // data de competência
+  vencimento          DateTime?
+  dataPagamento       DateTime?
+  status              StatusDespesa           @default(PENDENTE) // "vencido" nunca é gravado aqui — ver statusEfetivoDespesa()
+  formaPagamento      FormaPagamentoDespesa?
+  classificacao       ClassificacaoDespesa
+  entraNoLucroLiquido Boolean                 @default(true)
+  comprovantePath     String? // URL pública do Supabase Storage — mesmo padrão de Produto.fotoPath
+  observacoes         String?
+
+  recorrencia       TipoRecorrencia    @default(NENHUMA)
+  statusRecorrencia StatusRecorrencia? // só populado no registro "template" da série (despesaOrigemId null)
+  despesaOrigemId   String? // FK para o template; null no template e em despesas avulsas
+
+  usuarioId          String
+  canceladoPorId     String?
+  canceladoEm        DateTime?
+  motivoCancelamento String?
+
+  ativo     Boolean  @default(true) // arquivamento, mesmo padrão de Produto/Cliente/Fornecedor
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  categoria     CategoriaDespesa @relation(fields: [categoriaId], references: [id])
+  fornecedor    Fornecedor?      @relation(fields: [fornecedorId], references: [id])
+  usuario       Usuario          @relation(fields: [usuarioId], references: [id])
+  canceladoPor  Usuario?         @relation("DespesaCanceladaPor", fields: [canceladoPorId], references: [id])
+  despesaOrigem Despesa?         @relation("SerieRecorrencia", fields: [despesaOrigemId], references: [id])
+  ocorrencias   Despesa[]        @relation("SerieRecorrencia")
+
+  @@unique([despesaOrigemId, dataDespesa])
+  @@index([dataDespesa])
+  @@index([status])
+  @@index([categoriaId])
+}
+
+// ---------- Insumos operacionais (Fase 5.4) ----------
+
+model Insumo {
+  id            String   @id @default(cuid())
+  nome          String
+  unidade       String // "un", "m", "kg"... texto livre, sem enum (variedade real de embalagens)
+  custoUnitario Int // centavos
+  estoqueAtual  Int?
+  ativo         Boolean  @default(true)
+  createdAt     DateTime @default(now())
+
+  usos ItemVendaInsumo[]
+}
+
+model ItemVendaInsumo {
+  id                String @id @default(cuid())
+  vendaId           String
+  insumoId          String
+  quantidade        Int
+  custoRealSnapshot Int // centavos — mesmo padrão de ItemVenda.custoRealSnapshot
+
+  venda  Venda  @relation(fields: [vendaId], references: [id])
+  insumo Insumo @relation(fields: [insumoId], references: [id])
+}
+
+// ---------- Assistente de IA (Fase 1 — Fundação) ----------
+
+enum TipoEntradaAssistente {
+  TEXTO
+  AUDIO
+}
+
+model AssistenteConversa {
+  id        String   @id @default(cuid())
+  usuarioId String
+  titulo    String?
+  ativa     Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Prévia pendente de confirmação (Fase 2) — nome da ferramenta de prévia,
+  // os argumentos usados para gerá-la e quando foi gerada (expira sozinha).
+  previewFerramenta String?
+  previewArgs       Json?
+  previewCriadoEm   DateTime?
+
+  usuario    Usuario               @relation(fields: [usuarioId], references: [id])
+  interacoes AssistenteInteracao[]
+
+  @@index([usuarioId, ativa])
+}
+
+model AssistenteInteracao {
+  id               String                @id @default(cuid())
+  usuarioId        String
+  conversaId       String
+  requestId        String                @unique
+  mensagemOriginal String
+  tipoEntrada      TipoEntradaAssistente
+  transcricao      String?
+  intentJson       Json?
+  ferramenta       String?
+  argumentosJson   Json?
+  resultadoJson    Json?
+  erro             String?
+  createdAt        DateTime              @default(now())
+
+  usuario  Usuario            @relation(fields: [usuarioId], references: [id])
+  conversa AssistenteConversa @relation(fields: [conversaId], references: [id])
+
+  @@index([conversaId, createdAt])
+  @@index([usuarioId, createdAt])
+}
+
+// Linha única (singleton) — lida via findFirst() com fallback pras variáveis
+// de ambiente (mesmo padrão de ConfiguracaoSegmentacaoClientes). Permite ao
+// dono ligar/desligar o assistente e ajustar limites sem precisar de deploy.
+model ConfiguracaoAssistente {
+  id                     String   @id @default(cuid())
+  habilitado             Boolean  @default(true)
+  limiteDiarioPorUsuario Int      @default(200)
+  valorAltoCentavos      Int      @default(50000)
+  updatedAt              DateTime @updatedAt
+}
+
+// ---------- Cotador de Fretes (Melhor Envio) ----------
+
+// Uma linha por ambiente (sandbox/production) — nunca mistura tokens dos
+// dois. accessToken/refreshToken ficam gravados criptografados (ver
+// src/lib/integracoes/melhorEnvio/criptografia.ts), nunca em texto puro.
+model IntegracaoMelhorEnvio {
+  id            String    @id @default(cuid())
+  ambiente      String    @unique // "sandbox" | "production"
+  status        String    @default("desconectado") // desconectado | conectado | reconexao_necessaria
+  accessToken   String? // criptografado (AES-256-GCM)
+  refreshToken  String? // criptografado (AES-256-GCM)
+  tokenType     String?
+  scopes        String?
+  expiresAt     DateTime?
+  connectedAt   DateTime?
+  connectedById String?
+  refreshedAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  connectedBy Usuario? @relation(fields: [connectedById], references: [id])
+}
+
+// Proteção CSRF do fluxo OAuth — state aleatório, de uso único, com
+// expiração curta. Nunca aceita callback sem um state válido correspondente.
+model MelhorEnvioOAuthState {
+  id        String    @id @default(cuid())
+  state     String    @unique
+  usuarioId String
+  ambiente  String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id])
+}
+
+// Histórico de cotações — nunca guarda a resposta bruta da API nem tokens,
+// só um resumo (inclusive da opção eventualmente selecionada, que NÃO
+// implica compra do frete).
+model CotacaoFrete {
+  id                     String   @id @default(cuid())
+  usuarioId              String
+  ambiente               String
+  cepOrigem              String
+  cepDestino             String
+  pesoKg                 Float
+  alturaCm               Float
+  larguraCm              Float
+  comprimentoCm          Float
+  valorDeclaradoCentavos Int?
+  nomeReferencia         String?
+  observacao             String?
+  quantidadeOpcoes       Int      @default(0)
+  menorPrecoCentavos     Int?
+  menorPrazoDias         Int?
+  status                 String // sucesso | erro | parcial
+  erro                   String?
+  opcaoSelecionadaJson   Json?
+  createdAt              DateTime @default(now())
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id])
+
+  @@index([usuarioId, createdAt])
+  @@index([cepDestino])
+}

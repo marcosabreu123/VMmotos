@@ -1,0 +1,925 @@
+@import "tailwindcss";
+
+:root {
+  /* Identidade VM Moto Peças: preto de oficina, vermelho da marca e cromado.
+     O vermelho é a cor de ação (botão principal, item ativo, número em
+     destaque) e aparece em área pequena — fundo continua preto, do jeito que
+     a logo se apresenta. O cromado (--metallic) é detalhe de marca: filete,
+     brilho de título e moldura, nunca uma área grande preenchida.
+
+     Atenção ao mexer aqui: como a marca JÁ é vermelha, --danger não pode ser
+     o mesmo vermelho, senão "excluir" fica igual a "salvar". Por isso o
+     destrutivo é um coral mais claro e dessaturado, distinguível do vermelho
+     cheio da marca mesmo por quem enxerga pouca diferença de matiz — a
+     confirmação de ação destrutiva nunca depende só da cor. */
+  --background: #0a0a0b;
+  --surface: #131316;
+  --surface-muted: #1a1a1e;
+  --foreground: #f3f4f5;
+  --muted: #9ba0a7;
+  --border: #2a2b30;
+  --primary: #e11b22;
+  --primary-foreground: #ffffff;
+  --accent: #e11b22;
+  --accent-soft: rgba(225, 27, 34, 0.12);
+  --accent-luminous: #ff3b43;
+  --accent-hover: #f42730;
+  --accent-active-border: #8e1116;
+  --metallic: #d8dce1;
+  --metallic-dim: #8b929b;
+  --success: #3fbf71;
+  --success-soft: #10301d;
+  --danger: #ff8a7a;
+  --danger-soft: #3a1d18;
+  --warning: #f5a524;
+  --warning-soft: #3a2c12;
+  --radius: 14px;
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.5), 0 4px 20px rgba(0, 0, 0, 0.55);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-luminous: var(--accent-luminous);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-active-border: var(--accent-active-border);
+  --color-metallic: var(--metallic);
+  --color-metallic-dim: var(--metallic-dim);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --font-sans: var(--font-geist-sans);
+  /* Título/marca: condensada industrial, na linha da logo. O nome da variável
+     continua "serif" porque é o gancho que as telas do molde já usam; a face
+     em si não é serifada. Use .font-display em código novo. */
+  --font-serif: var(--font-display-brand);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Container central — coluna única mobile-first, ganha respiro em telas maiores. */
+.app-shell {
+  width: 100%;
+  max-width: 480px;
+  margin-inline: auto;
+  padding-inline: 20px;
+}
+@media (min-width: 768px) {
+  .app-shell {
+    max-width: 640px;
+  }
+}
+@media (min-width: 1024px) {
+  .app-shell {
+    max-width: 960px;
+    padding-inline: 32px;
+  }
+}
+
+/* Container largo — telas de trabalho intenso (venda) usam grid de 2 colunas. */
+.app-shell-wide {
+  width: 100%;
+  max-width: 1360px;
+  margin-inline: auto;
+  padding-inline: 20px;
+}
+@media (min-width: 1024px) {
+  .app-shell-wide {
+    padding-inline: 32px;
+  }
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent-active-border);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+/* Nome da marca e títulos de seção — mesma linha visual do logo.
+   .font-display é o nome correto; .font-serif é o apelido antigo do molde,
+   mantido para as telas que já o usam. */
+.font-display,
+.font-serif {
+  font-family: var(--font-serif), "Arial Narrow", system-ui, sans-serif;
+  letter-spacing: 0.01em;
+}
+
+/* Título com o brilho cromado da logo: prata clara no topo, mais escura na
+   base. Só para títulos grandes — em texto pequeno o gradiente vira sujeira.
+   O fallback é a cor sólida; navegador sem background-clip mostra o cromado
+   chapado em vez de texto invisível. */
+.texto-cromado {
+  color: var(--metallic);
+}
+@supports (-webkit-background-clip: text) or (background-clip: text) {
+  .texto-cromado {
+    background: linear-gradient(180deg, #ffffff 0%, var(--metallic) 42%, var(--metallic-dim) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+}
+
+/* Labels, categorias, rótulos — sans-serif espaçada em caixa alta,
+   mesmo estilo do catálogo (rótulos curtos em caixa alta). */
+.label-caps {
+  font-family: var(--font-sans), system-ui, sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+/* Divisória fina dourada com ✦ central — assinatura visual repetida do catálogo. */
+.brand-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--accent);
+  margin-block: 20px;
+}
+.brand-divider::before,
+.brand-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+.brand-divider span {
+  font-size: 13px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: 600;
+  border-radius: 12px;
+  padding: 14px 20px;
+  transition: opacity 0.15s ease, transform 0.05s ease, background-color 0.15s ease, border-color 0.15s ease;
+  cursor: pointer;
+  border: 1px solid transparent;
+  font-size: 16px;
+  text-align: center;
+}
+.btn:hover:not(:disabled) {
+  opacity: 0.92;
+}
+.btn:active:not(:disabled) {
+  transform: scale(0.985);
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.btn-primary {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+.btn-primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+  opacity: 1;
+}
+.btn-accent {
+  background: var(--accent);
+  color: var(--primary-foreground);
+}
+.btn-accent:hover:not(:disabled) {
+  background: var(--accent-hover);
+  opacity: 1;
+}
+.btn-outline {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--foreground);
+}
+.btn-outline:hover:not(:disabled) {
+  background: var(--surface-muted);
+  opacity: 1;
+}
+.btn-block {
+  width: 100%;
+}
+/* Botão grande — venda rápida prioriza poucos cliques e alvos fáceis de tocar. */
+.btn-lg {
+  padding: 20px 24px;
+  font-size: 18px;
+  border-radius: var(--radius);
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+}
+
+.card-interactive {
+  cursor: pointer;
+}
+.card-interactive:hover {
+  border-color: var(--accent-active-border);
+}
+.card-interactive:active {
+  transform: scale(0.99);
+}
+
+.input {
+  width: 100%;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 12px;
+  padding: 14px 16px;
+  font-size: 16px;
+  color: var(--foreground);
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.input:focus {
+  border-color: var(--accent-active-border);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.input::placeholder {
+  color: var(--muted);
+}
+.label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--foreground);
+  margin-bottom: 6px;
+  display: block;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 9px 16px;
+  border-radius: 999px;
+  background: var(--surface-muted);
+  border: 1.5px solid transparent;
+  color: var(--foreground);
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.05s ease;
+}
+.chip:hover:not(:disabled) {
+  border-color: var(--border);
+}
+.chip-selected {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: var(--accent-active-border);
+  font-weight: 600;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  border: 1px solid transparent;
+  color: var(--foreground);
+}
+.badge-danger {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+.badge-success {
+  background: var(--success-soft);
+  color: var(--success);
+}
+.badge-warning {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+.spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  opacity: 0.85;
+}
+/* Estado de carregamento — sempre no acento luminoso, nunca neutro. */
+.spinner-gold {
+  color: var(--accent-luminous);
+  width: 22px;
+  height: 22px;
+  border-width: 3px;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ---------- Sidebar fixa ---------- */
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+}
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 264px;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  z-index: 20;
+}
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 24px 20px 0;
+}
+.sidebar-brand img {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  object-fit: cover;
+}
+.sidebar-nav {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.sidebar-grupo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 14px;
+}
+.sidebar-grupo-titulo {
+  padding: 8px 14px 4px;
+  font-size: 11px;
+  opacity: 0.7;
+}
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 14px;
+  border-radius: 10px;
+  border-left: 3px solid transparent;
+  color: var(--muted);
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.sidebar-link svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+.sidebar-link:hover {
+  background: var(--surface-muted);
+  color: var(--foreground);
+}
+.sidebar-link-active {
+  background: var(--accent-soft);
+  border-left-color: var(--accent-active-border);
+  color: var(--accent);
+}
+.sidebar-link-active:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.sidebar-footer {
+  padding: 16px 20px 20px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.sidebar-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.main-content {
+  margin-left: 264px;
+  width: 100%;
+  min-width: 0;
+}
+
+/* Barra superior e botões da gaveta — só existem visualmente abaixo de 900px. */
+.sidebar-topbar { display: none; }
+.sidebar-backdrop { display: none; }
+.sidebar-close-btn { display: none; }
+
+@media (max-width: 900px) {
+  .app-layout {
+    flex-direction: column;
+  }
+
+  /* Barra fina sempre visível: logo + botão de menu + avatar. */
+  .sidebar-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 16px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  .sidebar-topbar-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .sidebar-topbar-brand img {
+    width: 32px;
+    height: 32px;
+    border-radius: 999px;
+    object-fit: cover;
+  }
+  .sidebar-menu-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--foreground);
+    flex-shrink: 0;
+  }
+  .sidebar-menu-btn:hover { background: var(--surface-muted); }
+
+  /* Fundo escurecido atrás da gaveta aberta. */
+  .sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    z-index: 35;
+  }
+
+  /* Gaveta lateral: escondida fora da tela, desliza ao abrir. */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: min(300px, 82vw);
+    height: 100%;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    gap: 0;
+    padding: 0;
+    transform: translateX(-100%);
+    transition: transform 0.22s ease;
+    z-index: 40;
+    overflow-y: auto;
+  }
+  .sidebar.sidebar-open {
+    transform: translateX(0);
+  }
+  .sidebar-close-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 999px;
+    background: var(--surface-muted);
+    color: var(--foreground);
+    align-self: flex-end;
+    margin: 12px 12px 0 auto;
+    flex-shrink: 0;
+  }
+  .sidebar-brand { padding: 4px 20px 0; }
+  .sidebar-nav {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    padding: 16px 12px;
+    overflow-y: auto;
+  }
+  .sidebar-link { border-left: 3px solid transparent; border-bottom: none; padding: 11px 14px; }
+  .sidebar-link-active { border-bottom-color: transparent; border-left-color: var(--accent-active-border); }
+  .sidebar-footer { border-top: 1px solid var(--border); flex-direction: column; margin-left: 0; padding: 16px 20px 20px; }
+  .main-content { margin-left: 0; width: 100%; }
+}
+
+/* Avatar circular com iniciais — usado no seletor de cliente e no rodapé da sidebar. */
+.avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+/* ---------- Estados obrigatórios de interface ---------- */
+/* Vazio: serifada itálica, discreta — nunca um simples texto cinza genérico. */
+.state-empty {
+  font-family: var(--font-serif), Georgia, serif;
+  font-style: italic;
+  color: var(--muted);
+  text-align: center;
+  padding: 32px 16px;
+}
+
+/* Erro: terracota/vermelho discreto — nunca vermelho puro. */
+.state-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--danger-soft);
+  color: var(--danger);
+  border: 1px solid var(--danger);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 14px;
+}
+
+/* Sucesso: confirmação visual clara, não só um badge de texto. */
+.state-success {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--success-soft);
+  border: 1px solid var(--success);
+  border-radius: var(--radius);
+  padding: 16px;
+  color: var(--foreground);
+}
+.state-success-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  background: var(--success);
+  color: var(--primary-foreground);
+  flex-shrink: 0;
+}
+
+/* ---------- Assistente de IA: botão flutuante + painel lateral ---------- */
+.assistente-botao {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  width: 56px;
+  height: 56px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--primary-foreground);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-card);
+  z-index: 30;
+  border: none;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+.assistente-botao:hover {
+  background: var(--accent-hover);
+  transform: scale(1.05);
+}
+.assistente-botao svg {
+  width: 26px;
+  height: 26px;
+}
+
+.assistente-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 45;
+}
+
+.assistente-painel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(400px, 100vw);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  transform: translateX(100%);
+  transition: transform 0.22s ease;
+  z-index: 50;
+}
+.assistente-painel.assistente-painel-aberto {
+  transform: translateX(0);
+}
+.assistente-painel-header {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.assistente-mensagens {
+  flex: 1;
+  /* min-height: 0 é o que faz o scroll existir. Item flex não encolhe abaixo
+     do próprio conteúdo por padrão, então a lista crescia, empurrava o rodapé
+     para fora e o overflow-y nunca entrava em ação. */
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.assistente-mensagem {
+  max-width: 88%;
+  padding: 10px 14px;
+  border-radius: 14px;
+  font-size: 14px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+.assistente-mensagem-usuario {
+  align-self: flex-end;
+  background: var(--accent-soft);
+  color: var(--foreground);
+  border-bottom-right-radius: 4px;
+}
+.assistente-mensagem-assistente {
+  align-self: flex-start;
+  background: var(--surface-muted);
+  color: var(--foreground);
+  border-bottom-left-radius: 4px;
+}
+.assistente-painel-footer {
+  flex: none;
+  border-top: 1px solid var(--border);
+  padding: 12px 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.assistente-input-linha {
+  display: flex;
+  gap: 8px;
+}
+.assistente-input-linha .input {
+  flex: 1;
+}
+.assistente-campo-texto {
+  resize: none;
+  overflow-y: auto;
+  line-height: 1.4;
+  font-family: inherit;
+}
+.assistente-aviso {
+  font-size: 11px;
+  color: var(--muted);
+  text-align: center;
+}
+
+@media (max-width: 900px) {
+  .assistente-painel {
+    width: 100vw;
+  }
+}
+
+/* ---------- Tela de venda: grid de 2 colunas ---------- */
+.venda-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+  align-items: start;
+}
+@media (min-width: 1024px) {
+  .venda-grid {
+    grid-template-columns: 1fr 400px;
+    gap: 32px;
+  }
+}
+
+.venda-painel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+@media (min-width: 1024px) {
+  .venda-painel {
+    position: sticky;
+    top: 24px;
+    max-height: calc(100vh - 48px);
+  }
+}
+
+.venda-carrinho-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.venda-resultados {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.produto-resultado {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px;
+}
+.produto-resultado-thumb {
+  width: 52px;
+  height: 52px;
+  border-radius: 10px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: var(--surface-muted);
+}
+.produto-resultado-add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--primary-foreground);
+  flex-shrink: 0;
+  transition: opacity 0.15s ease, transform 0.05s ease;
+}
+.produto-resultado-add:hover { opacity: 0.88; }
+.produto-resultado-add:active { transform: scale(0.92); }
+.produto-resultado-add:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* Seletor de quantidade no carrinho */
+.qty-stepper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.qty-stepper button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  color: var(--foreground);
+  background: transparent;
+}
+.qty-stepper button:hover { background: var(--surface-muted); }
+.qty-stepper span {
+  min-width: 20px;
+  text-align: center;
+  font-weight: 600;
+}
+
+/* Botões de forma de pagamento — ícone + rótulo, estado ativo bem marcado. */
+.payment-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 14px 8px;
+  border-radius: 12px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+}
+.payment-btn svg { width: 20px; height: 20px; }
+.payment-btn:hover { border-color: var(--accent-active-border); color: var(--foreground); }
+.payment-btn-active {
+  border-color: var(--accent-active-border);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* Resumo de valores da venda */
+.resumo-linha {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 14px;
+  color: var(--muted);
+}
+.resumo-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 12px;
+  margin-top: 4px;
+  border-top: 1px solid var(--border);
+}
+.resumo-total-valor {
+  font-family: var(--font-serif), Georgia, serif;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--accent-luminous);
+}
+
+/* Impressão de recibo — esconde navegação e ações, mantém só o conteúdo da venda. */
+@media print {
+  .sidebar,
+  .no-print {
+    display: none !important;
+  }
+  .main-content {
+    margin-left: 0 !important;
+  }
+  body {
+    background: #fff;
+    color: #000;
+  }
+  .card {
+    box-shadow: none;
+    border-color: #ccc;
+  }
+}
+
+/* Etiqueta de produto — layout pequeno pensado para impressão em papel de etiqueta. */
+.etiqueta {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 260px;
+  padding: 16px;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  background: #fff;
+  color: #000;
+  text-align: center;
+}
+
+.etiqueta-nome {
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.etiqueta-detalhe {
+  font-size: 12px;
+  color: #555;
+}
+
+.etiqueta-preco {
+  font-family: var(--font-serif), Georgia, serif;
+  font-size: 18px;
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+@media print {
+  .etiqueta {
+    border: none;
+  }
+}
