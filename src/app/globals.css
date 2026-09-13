@@ -1143,3 +1143,146 @@ a.resumo-card:active {
 .home-secao {
   margin-top: 32px;
 }
+
+/* ---------- Tabela de preços em massa ----------
+   Custo, venda, lucro e margem de todas as peças numa tela só. A tabela rola
+   dentro do próprio container (nunca a página inteira na horizontal) e a
+   barra de salvar fica colada embaixo, porque numa lista longa o botão não
+   pode sumir de vista de quem edita no meio. */
+.tabela-precos-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.tabela-precos {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 640px;
+}
+.tabela-precos th,
+.tabela-precos td {
+  padding: 10px 14px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.tabela-precos thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--surface-muted);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 600;
+}
+.tabela-precos tbody tr:last-child td {
+  border-bottom: none;
+}
+.tabela-precos .col-num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* Linha tocada mas ainda não salva: filete vermelho na borda esquerda.
+   Não depende só de cor — a contagem na barra de baixo diz quantas são. */
+.tabela-precos .linha-alterada td:first-child {
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+.tabela-precos .linha-alterada td {
+  background: var(--accent-soft);
+}
+
+.celula-sub {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.input-preco {
+  width: 104px;
+  text-align: right;
+  border: 1px solid var(--border);
+  background: var(--background);
+  border-radius: 9px;
+  padding: 8px 10px;
+  font-size: 15px;
+  color: var(--foreground);
+  outline: none;
+}
+.input-preco:focus {
+  border-color: var(--accent-active-border);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.barra-salvar {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: rgba(19, 19, 22, 0.96);
+  backdrop-filter: blur(10px);
+}
+.barra-salvar-info {
+  font-weight: 600;
+  font-size: 14px;
+}
+.barra-salvar-msg {
+  font-size: 14px;
+}
+/* Empurra os botões para a direita no desktop; no celular eles descem. */
+.barra-salvar .btn {
+  margin-left: auto;
+}
+.barra-salvar .btn ~ .btn {
+  margin-left: 0;
+}
+
+/* Ações do topo da tela de Peças. "Lançar pedido" é a principal e ocupa a
+   linha inteira no celular — é a ação que o dono mais repete. */
+.acoes-pecas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.acoes-pecas .acao-destaque {
+  flex: 1 1 260px;
+}
+@media (min-width: 640px) {
+  .acoes-pecas .acao-destaque {
+    flex: 0 0 auto;
+    min-width: 240px;
+  }
+}
+
+/* Ferramentas de uso eventual: links discretos, em uma linha que quebra.
+   Ficam disponíveis sem disputar atenção com a ação principal. */
+.acoes-secundarias {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  margin-bottom: 22px;
+  font-size: 13.5px;
+}
+.acoes-secundarias a {
+  color: var(--muted);
+  border-bottom: 1px solid transparent;
+  padding-bottom: 1px;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+.acoes-secundarias a:hover {
+  color: var(--foreground);
+  border-bottom-color: var(--accent-active-border);
+}

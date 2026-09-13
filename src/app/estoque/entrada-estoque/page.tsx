@@ -3,6 +3,7 @@ import { requireUser } from "@/lib/auth";
 import { AppShell } from "@/components/AppShell";
 import { PageHeader } from "@/components/PageHeader";
 import { buscarProdutoPorId } from "@/lib/produtos";
+import { AssistenteBotaoFlutuante } from "@/components/assistente/AssistenteBotaoFlutuante";
 import { EntradaEstoqueForm } from "./EntradaEstoqueForm";
 
 export default async function EntradaEstoquePage({
@@ -39,6 +40,11 @@ export default async function EntradaEstoquePage({
             : undefined
         }
       />
+
+      {/* Única tela do sistema com o assistente de IA, por decisão do dono:
+          é aqui que ele ajuda de verdade — ler o pedido do fornecedor em vez
+          de digitar item por item. */}
+      <AssistenteBotaoFlutuante usuario={usuario} />
     </AppShell>
   );
 }

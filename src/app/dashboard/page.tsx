@@ -11,20 +11,15 @@ import type { SessaoUsuario } from "@/lib/types";
 import {
   IconVender,
   IconProdutos,
-  IconEstoque,
-  IconEntradaEstoque,
   IconClientes,
   IconMoto,
   IconRepasse,
   IconDespesas,
   IconRelatorios,
   IconFornecedores,
-  IconCompras,
   IconDinheiro,
   IconUsuarios,
   IconAuditoria,
-  IconChat,
-  IconFrete,
 } from "@/components/icons";
 
 /**
@@ -83,25 +78,12 @@ const DIA_A_DIA: Item[] = [
     principal: true,
   },
   {
+    // Peças agora é catálogo + estoque + lançamento de pedido na mesma tela.
     href: "/produtos",
     icone: <IconProdutos {...TAMANHO_ICONE} />,
     titulo: nicho.termos.produto.plural,
-    ajuda: "Cadastro, preço e busca",
+    ajuda: "Estoque, preços e lançar pedido",
     recurso: "produtos",
-  },
-  {
-    href: "/estoque/entrada-estoque",
-    icone: <IconEntradaEstoque {...TAMANHO_ICONE} />,
-    titulo: "Entrada de peça",
-    ajuda: "Chegou mercadoria do fornecedor",
-    recurso: "estoque",
-  },
-  {
-    href: "/estoque",
-    icone: <IconEstoque {...TAMANHO_ICONE} />,
-    titulo: "Estoque",
-    ajuda: "O que tem e o que está acabando",
-    recurso: "estoque",
   },
   {
     href: "/vendas",
@@ -160,18 +142,6 @@ const GESTAO: Item[] = [
     recurso: "fornecedores",
   },
   {
-    href: "/compras",
-    icone: <IconCompras {...TAMANHO_ICONE_MINI} />,
-    titulo: "Pedidos de compra",
-    recurso: "compras",
-  },
-  {
-    href: "/fretes",
-    icone: <IconFrete {...TAMANHO_ICONE_MINI} />,
-    titulo: "Cotador de fretes",
-    recurso: "fretes",
-  },
-  {
     href: "/usuarios",
     icone: <IconUsuarios {...TAMANHO_ICONE_MINI} />,
     titulo: "Usuários",
@@ -183,13 +153,13 @@ const GESTAO: Item[] = [
     titulo: "Auditoria",
     somenteDono: true,
   },
-  {
-    href: "/assistente/configuracoes",
-    icone: <IconChat {...TAMANHO_ICONE_MINI} />,
-    titulo: "Assistente de IA",
-    somenteDono: true,
-  },
 ];
+
+// Saíram da navegação a pedido do dono: cotador de fretes e Melhor Envio
+// (loja de balcão, não despacha peça pelo correio), a tela de configuração do
+// assistente de IA, e "pedidos de compra" — que duplicava o lançamento de
+// pedido agora embutido em Peças. As rotas continuam existindo; é só voltar a
+// listá-las aqui se um dia fizerem falta.
 
 function Resumo({
   rotulo,

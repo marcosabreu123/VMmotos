@@ -4,13 +4,26 @@ import { AppShell } from "@/components/AppShell";
 import { PageHeader } from "@/components/PageHeader";
 import { EstoqueBadge } from "@/components/EstoqueBadge";
 import { estoqueTotalProduto, listarProdutos } from "@/lib/produtos";
-import { produtosAbaixoDoMinimo, produtosSemEstoque } from "@/lib/estoque";
+import { produtosAbaixoDoMinimo, produtosSemEstoque, valorEstoqueAtual } from "@/lib/estoque";
+import { podeVerCustos } from "@/lib/permissoes";
 import { centavosParaReais } from "@/lib/money";
+import { nicho } from "@/config/nicho";
+import { IconEntradaEstoque } from "@/components/icons";
+
+/**
+ * PEÇAS — tela única de catálogo + estoque.
+ *
+ * Antes isso eram quatro telas separadas (produtos, estoque, entrada de
+ * estoque, pedido de compra) mostrando a mesma lista com nomes diferentes. O
+ * dono pediu para juntar: aqui se vê o que tem, por quanto vende e quanto há
+ * em estoque, e daqui se lança a entrada — que é a ação de maior destaque,
+ * porque é a que ele mais faz depois de vender.
+ */
 
 const TITULOS_FILTRO: Record<string, string> = {
-  "estoque-baixo": "Produtos com estoque baixo",
-  "sem-estoque": "Produtos sem estoque",
-  arquivados: "Produtos arquivados",
+  "estoque-baixo": "Peças com estoque baixo",
+  "sem-estoque": "Peças sem estoque",
+  arquivados: "Peças arquivadas",
 };
 
 export default async function ProdutosPage({
@@ -20,6 +33,7 @@ export default async function ProdutosPage({
 }) {
   const usuario = await requireUser();
   const { busca, filtro } = await searchParams;
+  const vePrecoDeCusto = podeVerCustos(usuario.papel);
 
   type ItemLista = {
     produto: {
@@ -42,38 +56,69 @@ export default async function ProdutosPage({
     itens = await produtosSemEstoque();
   } else if (filtro === "estoque-baixo") {
     itens = await produtosAbaixoDoMinimo();
-  } else if (filtro === "arquivados") {
-    const produtos = await listarProdutos(busca, true);
-    const estoques = await Promise.all(produtos.map((produto) => estoqueTotalProduto(produto.id)));
-    itens = produtos.map((produto, indice) => ({ produto, estoqueAtual: estoques[indice] }));
   } else {
-    const produtos = await listarProdutos(busca);
+    const produtos = await listarProdutos(busca, filtro === "arquivados");
     const estoques = await Promise.all(produtos.map((produto) => estoqueTotalProduto(produto.id)));
     itens = produtos.map((produto, indice) => ({ produto, estoqueAtual: estoques[indice] }));
   }
 
+  const valorEstoque = vePrecoDeCusto && !filtro ? await valorEstoqueAtual() : null;
+
+  const plural = nicho.termos.produto.plural;
+
   return (
-    <AppShell usuario={usuario}>
-      <PageHeader
-        title={filtro ? TITULOS_FILTRO[filtro] ?? "Produtos" : "Produtos"}
-        action={
-          <div className="flex flex-wrap gap-2">
-            <a href="/api/produtos/exportar" className="btn btn-outline">
-              Exportar CSV
-            </a>
-            <Link href="/ferramentas/importar" className="btn btn-outline">
-              Importar CSV
-            </Link>
-            <Link href="/produtos/novo" className="btn btn-primary">
-              + Novo produto
-            </Link>
+    <AppShell usuario={usuario} wide>
+      <PageHeader title={filtro ? (TITULOS_FILTRO[filtro] ?? plural) : plural} />
+
+      {/* Lançar pedido é a ação principal desta tela e por isso vem antes de
+          tudo, em tamanho grande: é o que o dono faz toda vez que chega
+          mercadoria, e antes estava escondido numa tela separada. */}
+      <div className="acoes-pecas">
+        <Link href="/estoque/entrada-estoque" className="btn btn-primary btn-lg acao-destaque">
+          <IconEntradaEstoque width={22} height={22} />
+          Lançar pedido
+        </Link>
+        <Link href="/produtos/novo" className="btn btn-outline">
+          + Nova peça
+        </Link>
+        {vePrecoDeCusto && (
+          <Link href="/produtos/precos" className="btn btn-outline">
+            Preços e margem
+          </Link>
+        )}
+      </div>
+
+      {valorEstoque && (
+        <section className="card mb-6 p-5">
+          <div className="flex flex-wrap items-end justify-between gap-6">
+            <div>
+              <p className="label-caps mb-1">Lucro futuro potencial</p>
+              <p className="resumo-valor">{centavosParaReais(valorEstoque.lucroFuturoPotencial)}</p>
+              <p className="ajuda">
+                {valorEstoque.margemPotencial.toFixed(1)}% de margem se tudo vender pelo preço cheio
+              </p>
+            </div>
           </div>
-        }
-      />
+        </section>
+      )}
+
+      {/* Ferramentas de estoque: usadas de vez em quando, então ficam
+          discretas, sem competir com "Lançar pedido". */}
+      <div className="acoes-secundarias">
+        <Link href="/estoque/inventario">Conferir estoque</Link>
+        <Link href="/estoque/ajuste">Ajustar estoque</Link>
+        <Link href="/estoque/lotes">Lotes</Link>
+        <Link href="/estoque/insumos">Insumos</Link>
+        <Link href="/estoque/entrada-estoque/historico">Histórico de entradas</Link>
+        <Link href="/produtos?filtro=estoque-baixo">Estoque baixo</Link>
+        <Link href="/produtos?filtro=sem-estoque">Sem estoque</Link>
+        <Link href="/ferramentas/importar">Importar CSV</Link>
+        <a href="/api/produtos/exportar">Exportar CSV</a>
+      </div>
 
       {filtro && (
         <Link href="/produtos" className="label-caps mb-4 inline-block" style={{ color: "var(--accent)" }}>
-          ← ver todos os produtos
+          ← ver todas as {plural.toLowerCase()}
         </Link>
       )}
 
@@ -83,18 +128,22 @@ export default async function ProdutosPage({
             <input
               name="busca"
               defaultValue={busca}
-              placeholder="Buscar por nome, marca, SKU ou código de barras..."
+              placeholder="Buscar por nome, fabricante, código ou código de barras..."
               className="input"
             />
           </form>
-          <Link href="/produtos?filtro=arquivados" className="label-caps mb-6 inline-block" style={{ color: "var(--muted)" }}>
-            Ver arquivados
+          <Link
+            href="/produtos?filtro=arquivados"
+            className="label-caps mb-6 inline-block"
+            style={{ color: "var(--muted)" }}
+          >
+            Ver arquivadas
           </Link>
         </>
       )}
 
       {itens.length === 0 ? (
-        <p className="state-empty">Nenhum produto encontrado.</p>
+        <p className="state-empty">Nenhuma peça encontrada.</p>
       ) : (
         <ul className="flex flex-col gap-3">
           {itens.map(({ produto, estoqueAtual }) => (
@@ -114,7 +163,7 @@ export default async function ProdutosPage({
                 <div className="flex-1">
                   <p className="font-semibold">{produto.nome}</p>
                   <p className="text-sm" style={{ color: "var(--muted)" }}>
-                    {produto.marca} · {produto.categoria} · SKU {produto.sku}
+                    {produto.marca} · {produto.categoria} · {produto.sku}
                   </p>
                 </div>
                 <div className="flex flex-col items-end gap-1">
