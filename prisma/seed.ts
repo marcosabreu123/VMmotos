@@ -4,20 +4,53 @@ import { nicho } from "../src/config/nicho";
 
 const prisma = new PrismaClient();
 
-async function main() {
-  const email = process.env.SEED_OWNER_EMAIL ?? "dono@empresa.local";
-  const senha = process.env.SEED_OWNER_SENHA ?? "troque-esta-senha";
-  const nome = process.env.SEED_OWNER_NOME ?? "Dono do Negócio";
+/**
+ * Cria um usuário OWNER se ele ainda não existir.
+ *
+ * Nunca mexe em usuário existente: rodar o seed de novo num banco que já está
+ * em uso não pode ressuscitar uma senha antiga nem sobrescrever a que o dono
+ * trocou.
+ */
+async function garantirOwner(params: {
+  rotulo: string;
+  email: string;
+  senha: string;
+  nome: string;
+}) {
+  const { rotulo, email, senha, nome } = params;
 
   const existente = await prisma.usuario.findUnique({ where: { email } });
   if (existente) {
-    console.log(`Usuário owner já existe (${email}), nada a fazer.`);
-  } else {
-    const senhaHash = await bcrypt.hash(senha, 10);
-    await prisma.usuario.create({ data: { nome, email, senhaHash, papel: "OWNER" } });
-    console.log(`Usuário OWNER criado: ${email} / senha: ${senha}`);
-    console.log("Troque a senha assim que possível em /usuarios.");
+    console.log(`${rotulo}: já existe (${email}), nada a fazer.`);
+    return;
   }
+
+  const senhaHash = await bcrypt.hash(senha, 10);
+  await prisma.usuario.create({ data: { nome, email, senhaHash, papel: "OWNER" } });
+  console.log(`${rotulo}: criado — ${email} / senha: ${senha}`);
+}
+
+async function main() {
+  // Dois acessos OWNER desde o início, a pedido do cliente:
+  //   - admin: nosso, para manutenção futura;
+  //   - dono: o da loja, que é quem cadastra os demais usuários depois.
+  // Só o papel OWNER escreve em "usuarios" (ver src/lib/permissoes.ts), então
+  // é isso que garante que ninguém mais consiga criar acesso no sistema.
+  await garantirOwner({
+    rotulo: "Admin (manutenção)",
+    email: process.env.SEED_ADMIN_EMAIL ?? "admin@vmmotopecas.com.br",
+    senha: process.env.SEED_ADMIN_SENHA ?? "troque-esta-senha",
+    nome: process.env.SEED_ADMIN_NOME ?? "Administrador do Sistema",
+  });
+
+  await garantirOwner({
+    rotulo: "Dono da loja",
+    email: process.env.SEED_OWNER_EMAIL ?? "dono@empresa.local",
+    senha: process.env.SEED_OWNER_SENHA ?? "troque-esta-senha",
+    nome: process.env.SEED_OWNER_NOME ?? "Dono do Negócio",
+  });
+
+  console.log("Troque as duas senhas no primeiro acesso, em /usuarios.");
 
   // Categorias de despesa vêm do nicho configurado — cada segmento gasta com
   // coisas diferentes, e sem elas a tela de despesas nasce inutilizável.

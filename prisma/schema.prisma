@@ -201,10 +201,16 @@ model Cliente {
   nome        String
   telefone    String?
   email       String?
+  /// CPF/CNPJ. Não é usado por nenhuma tela hoje: existe porque a emissão de
+  /// nota fiscal está fora do escopo desta fase mas é desejo declarado do
+  /// dono, e sem o documento do cliente a nota não sai. Guardar desde já
+  /// evita ter que voltar atrás e recadastrar a base inteira depois.
+  documento   String?
   observacoes String?
   ativo       Boolean  @default(true)
   createdAt   DateTime @default(now())
   vendas      Venda[]
+  motos       Moto[]
 }
 
 // Linha única (singleton) — lida via findFirst() com fallback pros defaults do
@@ -236,16 +242,31 @@ model Venda {
   canceladoPorId     String?
   canceladoEm        DateTime?
 
+  /// Moto atendida, quando a venda envolveu serviço. Opcional de propósito:
+  /// venda de balcão (só peça) não tem moto, e obrigar placa atrasaria o
+  /// atendimento.
+  motoId String?
+
+  /// Retorno de garantia: aponta para a venda que originou o serviço. Mão de
+  /// obra refeita em garantia NÃO gera repasse novo (regra do dono), e é
+  /// aqui que essa ligação fica registrada.
+  vendaGarantiaDeId String?
+
   usuario       Usuario               @relation(fields: [usuarioId], references: [id])
   cliente       Cliente?              @relation(fields: [clienteId], references: [id])
   canceladoPor  Usuario?              @relation("VendaCanceladaPor", fields: [canceladoPorId], references: [id])
+  moto          Moto?                 @relation(fields: [motoId], references: [id])
+  garantiaDe    Venda?                @relation("RetornoGarantia", fields: [vendaGarantiaDeId], references: [id])
+  retornos      Venda[]               @relation("RetornoGarantia")
   itens         ItemVenda[]
+  servicos      ItemVendaServico[]
   movimentacoes MovimentacaoEstoque[]
   devolucoes    Devolucao[]
   insumos       ItemVendaInsumo[]
 
   @@index([dataHora])
   @@index([status])
+  @@index([motoId])
 }
 
 model ItemVenda {
@@ -608,4 +629,146 @@ model CotacaoFrete {
 
   @@index([usuarioId, createdAt])
   @@index([cepDestino])
+}
+
+// ---------- Oficina: mão de obra, motos e repasse (VM Moto Peças) ----------
+//
+// MODELO DE DINHEIRO DESTA LOJA — ler antes de mexer:
+//
+// A mão de obra NÃO é comissão sobre a venda: é receita que pertence ao
+// pessoal da oficina. O dono fica com o resultado das PEÇAS; o valor do
+// serviço é repassado. Por isso o relatório de lucro não pode somar mão de
+// obra como lucro da loja — ela entra e sai.
+//
+// Divisão (o "Verniz" é o sócio da oficina, Mecanico.socioOficina = true):
+//   - sócio executa sozinho ............ 100% para ele
+//   - outro mecânico executa ...........  50% para ele + 50% para o sócio
+//   - cliente traz a própria peça ...... mesma regra (o sócio mantém os 50%)
+//   - retorno de garantia .............. ninguém recebe de novo
+// Nunca há mais de dois beneficiários: o sócio e, quando houver, o executor.
+// A regra acima é só o PADRÃO sugerido na tela — o dono pode ajustar os
+// percentuais na hora da venda ("eles configuram").
+//
+// O valor do serviço é digitado na venda, livre. Não existe tabela de preço:
+// o serviço é negociado caso a caso.
+
+model Mecanico {
+  id   String @id @default(cuid())
+  nome String
+
+  /// Sócio da oficina (o "Verniz"). Entra em 50% de toda mão de obra
+  /// executada por outro mecânico e fica com 100% do que executa sozinho.
+  /// Espera-se um só marcado; se houver mais de um, a regra padrão usa o
+  /// mais antigo e o dono ajusta na tela.
+  socioOficina Boolean @default(false)
+
+  ativo     Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  repasses    RepasseMaoDeObra[]
+  fechamentos FechamentoRepasse[]
+
+  @@index([ativo])
+}
+
+model Moto {
+  /// Id próprio em vez de usar a placa como chave: placa digitada errada no
+  /// balcão é corriqueiro, e corrigi-la não pode quebrar as vendas já
+  /// ligadas à moto.
+  id String @id @default(cuid())
+
+  /// Sempre normalizada em maiúsculas e sem hífen antes de gravar (ver
+  /// lib/motos.ts) — é a chave que o dono usa para achar o histórico, e
+  /// "abc1d23" e "ABC-1D23" não podem virar duas motos.
+  placa String @unique
+
+  /// Tudo aqui é opcional por decisão do dono: no balcão, exigir modelo ou
+  /// cliente só atrasaria o atendimento. A placa sozinha já dá o histórico.
+  modelo      String?
+  clienteId   String?
+  observacoes String?
+
+  ativo     Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  cliente Cliente? @relation(fields: [clienteId], references: [id])
+  vendas  Venda[]
+
+  @@index([clienteId])
+}
+
+/// Uma linha de mão de obra dentro da venda. Mesmo padrão de
+/// ItemVendaInsumo: pendurada na venda, fora do estoque (serviço não tem
+/// lote nem custo de compra).
+model ItemVendaServico {
+  id        String @id @default(cuid())
+  vendaId   String
+  descricao String
+  /// centavos — valor combinado com o cliente, digitado na venda.
+  valor     Int
+
+  venda    Venda              @relation(fields: [vendaId], references: [id])
+  repasses RepasseMaoDeObra[]
+
+  @@index([vendaId])
+}
+
+enum StatusRepasse {
+  /// Serviço feito, cliente ainda não quitou a venda. Regra do dono: só vira
+  /// dinheiro do mecânico quando o cliente paga.
+  PENDENTE
+  /// Cliente pagou. Entra no próximo fechamento semanal.
+  A_PAGAR
+  /// Já fechado e pago, com a despesa lançada.
+  PAGO
+  /// Venda cancelada ou serviço devolvido — não se paga mais.
+  CANCELADO
+}
+
+model RepasseMaoDeObra {
+  id                 String @id @default(cuid())
+  itemVendaServicoId String
+  mecanicoId         String
+
+  /// Pontos-base: 5000 = 50,00%. Informativo — quem manda no pagamento é
+  /// `valor`, congelado no lançamento, para que mudar a regra depois não
+  /// reescreva repasse já apurado.
+  percentual Int
+
+  /// centavos. A soma dos repasses de um serviço fecha exatamente com
+  /// ItemVendaServico.valor: o último beneficiário recebe a sobra do
+  /// arredondamento, para não sumir nem inventar centavo.
+  valor Int
+
+  status       StatusRepasse @default(PENDENTE)
+  fechamentoId String?
+  createdAt    DateTime      @default(now())
+
+  itemVendaServico ItemVendaServico   @relation(fields: [itemVendaServicoId], references: [id])
+  mecanico         Mecanico           @relation(fields: [mecanicoId], references: [id])
+  fechamento       FechamentoRepasse? @relation(fields: [fechamentoId], references: [id])
+
+  @@index([mecanicoId, status])
+  @@index([itemVendaServicoId])
+}
+
+/// Fechamento semanal, uma linha por mecânico por período. Ao fechar, gera
+/// uma Despesa na categoria "Comissões" para que o dinheiro saia do caixa no
+/// relatório — sem isso o lucro apareceria inflado.
+model FechamentoRepasse {
+  id         String   @id @default(cuid())
+  mecanicoId String
+  inicio     DateTime
+  fim        DateTime
+  /// centavos — soma dos repasses incluídos, congelada no fechamento.
+  total      Int
+  despesaId  String?
+  usuarioId  String
+  createdAt  DateTime @default(now())
+
+  mecanico Mecanico           @relation(fields: [mecanicoId], references: [id])
+  repasses RepasseMaoDeObra[]
+
+  @@unique([mecanicoId, inicio, fim])
+  @@index([inicio, fim])
 }
