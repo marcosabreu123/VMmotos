@@ -1,5 +1,11 @@
 import { prisma } from "./db";
 import type { FormaPagamento, StatusVenda, Prisma } from "@prisma/client";
+import {
+  dividirMaoDeObra,
+  ErroRepasse,
+  type BeneficiarioRepasse,
+  type RepasseCalculado,
+} from "./oficina/repasse";
 
 export type ItemCarrinho = {
   produtoId: string;
@@ -13,8 +19,29 @@ export type ItemCarrinho = {
   precoUnitario?: number; // centavos
 };
 
+/**
+ * Uma linha de mão de obra da venda.
+ *
+ * O valor é digitado, não vem de tabela: o serviço é negociado caso a caso.
+ * `beneficiarios` já chega resolvido da tela (o padrão é sócio + executor,
+ * editável); lista vazia = ninguém recebe, que é o caso do retorno de
+ * garantia.
+ */
+export type ServicoVenda = {
+  descricao: string;
+  /** centavos */
+  valor: number;
+  beneficiarios: BeneficiarioRepasse[];
+};
+
 export type DadosVenda = {
   itens: ItemCarrinho[];
+  /** Mão de obra lançada na mesma venda das peças. */
+  servicos?: ServicoVenda[];
+  /** Moto atendida — só faz sentido quando houve serviço, e é opcional. */
+  motoId?: string | null;
+  /** Retorno de garantia: aponta para a venda de origem do serviço. */
+  vendaGarantiaDeId?: string | null;
   formaPagamento: FormaPagamento;
   descontoTotal?: number; // centavos
   acrescimoTotal?: number; // centavos — taxa de cartão, frete cobrado à parte etc.
@@ -55,8 +82,52 @@ async function encontrarLoteFEFO(tx: Prisma.TransactionClient, produtoId: string
 }
 
 export async function registrarVenda(dados: DadosVenda) {
-  if (dados.itens.length === 0) {
-    throw new ErroVenda("O carrinho está vazio.");
+  const servicos = dados.servicos ?? [];
+
+  // Venda só de mão de obra é rotina numa oficina (o cliente traz a peça, ou
+  // é só serviço). Por isso o carrinho vazio só é erro quando também não há
+  // serviço nenhum.
+  if (dados.itens.length === 0 && servicos.length === 0) {
+    throw new ErroVenda("Adicione ao menos uma peça ou um serviço.");
+  }
+
+  for (const servico of servicos) {
+    if (!servico.descricao.trim()) {
+      throw new ErroVenda("Descreva o serviço realizado.");
+    }
+    if (!Number.isInteger(servico.valor) || servico.valor < 0) {
+      throw new ErroVenda(`Valor inválido para o serviço "${servico.descricao}".`);
+    }
+  }
+
+  // Os mecânicos são conferidos ANTES da transação, pelo mesmo motivo dos
+  // produtos: são dados estáveis e buscá-los lá dentro só encomprida a
+  // transação. Aqui a checagem também evita gravar repasse para mecânico
+  // inexistente ou arquivado, que ninguém veria para pagar depois.
+  const idsMecanicos = [
+    ...new Set(servicos.flatMap((s) => s.beneficiarios.map((b) => b.mecanicoId))),
+  ];
+  if (idsMecanicos.length > 0) {
+    const encontrados = await prisma.mecanico.findMany({
+      where: { id: { in: idsMecanicos }, ativo: true },
+      select: { id: true },
+    });
+    if (encontrados.length !== idsMecanicos.length) {
+      throw new ErroVenda("Algum mecânico da divisão não existe mais ou foi arquivado.");
+    }
+  }
+
+  // A divisão é calculada e conferida ANTES de abrir a transação, por dois
+  // motivos: uma divisão inválida derruba a venda sem nada ter sido gravado,
+  // e o erro chega como ErroVenda — que é o que as telas sabem transformar em
+  // mensagem. Deixado lá dentro, o ErroRepasse subiria cru e viraria erro de
+  // servidor na cara do usuário.
+  let repassesPorServico: RepasseCalculado[][];
+  try {
+    repassesPorServico = servicos.map((s) => dividirMaoDeObra(s.valor, s.beneficiarios));
+  } catch (erro) {
+    if (erro instanceof ErroRepasse) throw new ErroVenda(erro.message);
+    throw erro;
   }
 
   // Os produtos são lidos ANTES da transação: são dados estáveis (nome, preço,
@@ -126,8 +197,24 @@ export async function registrarVenda(dados: DadosVenda) {
       });
     }
 
+    const subtotalPecas = subtotal;
+    const totalServicos = servicos.reduce((soma, s) => soma + s.valor, 0);
+    subtotal += totalServicos;
+
     const descontoTotal = dados.descontoTotal ?? 0;
     const acrescimoTotal = dados.acrescimoTotal ?? 0;
+
+    // Regra do dono: desconto é só no preço das peças, nunca na mão de obra.
+    // A mão de obra não é dinheiro dele para dar de desconto — é do pessoal da
+    // oficina. Sem este limite, um desconto grande sairia do bolso do mecânico
+    // sem ninguém perceber, porque o repasse é calculado sobre o valor cheio
+    // do serviço.
+    if (descontoTotal > subtotalPecas) {
+      throw new ErroVenda(
+        "O desconto não pode passar do valor das peças — mão de obra não entra em desconto."
+      );
+    }
+
     const total = subtotal - descontoTotal + acrescimoTotal;
     const valorPago = dados.valorPago ?? total;
 
@@ -147,10 +234,43 @@ export async function registrarVenda(dados: DadosVenda) {
         valorPago,
         observacoes: dados.observacoes?.trim() || null,
         dataHora: dados.dataHora ?? undefined,
+        motoId: dados.motoId ?? null,
+        vendaGarantiaDeId: dados.vendaGarantiaDeId ?? null,
         itens: { create: itensParaCriar },
       },
       include: { itens: true },
     });
+
+    // ---- Mão de obra e repasse ----
+    //
+    // O repasse nasce PENDENTE e só vira A_PAGAR quando o cliente quita, que
+    // é a regra do dono ("o mecânico recebe quando o cliente paga"). Quando a
+    // venda já sai paga, o repasse nasce direto como A_PAGAR.
+    const vendaQuitada = valorPago >= total;
+
+    for (const [indice, servico] of servicos.entries()) {
+      const linha = await tx.itemVendaServico.create({
+        data: {
+          vendaId: venda.id,
+          descricao: servico.descricao.trim(),
+          valor: servico.valor,
+        },
+      });
+
+      // Já calculado e conferido acima. Lista vazia (garantia) não gera nada.
+      const repasses = repassesPorServico[indice];
+      if (repasses.length > 0) {
+        await tx.repasseMaoDeObra.createMany({
+          data: repasses.map((r) => ({
+            itemVendaServicoId: linha.id,
+            mecanicoId: r.mecanicoId,
+            percentual: r.percentual,
+            valor: r.valor,
+            status: vendaQuitada ? ("A_PAGAR" as const) : ("PENDENTE" as const),
+          })),
+        });
+      }
+    }
 
     // createMany em vez de um create por item: uma ida ao banco no lugar de N.
     await tx.movimentacaoEstoque.createMany({
@@ -198,9 +318,27 @@ export async function registrarPagamentoVenda(params: { vendaId: string; valor: 
     throw new ErroVenda(`O valor informado é maior que o saldo devedor (${saldoDevedor} centavos).`);
   }
 
-  return prisma.venda.update({
-    where: { id: params.vendaId },
-    data: { valorPago: { increment: params.valor } },
+  return prisma.$transaction(async (tx) => {
+    const atualizada = await tx.venda.update({
+      where: { id: params.vendaId },
+      data: { valorPago: { increment: params.valor } },
+    });
+
+    // O momento em que o cliente termina de pagar é o momento em que a mão de
+    // obra passa a ser devida ao mecânico — regra do dono. Fica na mesma
+    // transação do pagamento: registrar que o cliente pagou e esquecer de
+    // liberar o repasse deixaria o mecânico sem receber sem ninguém notar.
+    if (atualizada.valorPago >= atualizada.total) {
+      await tx.repasseMaoDeObra.updateMany({
+        where: {
+          status: "PENDENTE",
+          itemVendaServico: { vendaId: atualizada.id },
+        },
+        data: { status: "A_PAGAR" },
+      });
+    }
+
+    return atualizada;
   });
 }
 
@@ -267,6 +405,18 @@ export async function cancelarVenda(params: { vendaId: string; usuarioId: string
         },
       });
     }
+
+    // Venda cancelada não paga mão de obra. Sem isto o repasse continuaria
+    // "a pagar" e entraria no fechamento da semana — o dono pagaria por um
+    // serviço que ele mesmo desfez. Repasse JÁ PAGO não é tocado: aquele
+    // dinheiro saiu do caixa e desfazer no sistema não o traz de volta.
+    await tx.repasseMaoDeObra.updateMany({
+      where: {
+        status: { in: ["PENDENTE", "A_PAGAR"] },
+        itemVendaServico: { vendaId: venda.id },
+      },
+      data: { status: "CANCELADO" },
+    });
 
     return tx.venda.update({
       where: { id: venda.id },
