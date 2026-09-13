@@ -1369,3 +1369,53 @@ a.resumo-card:active {
 .link-perigo:hover {
   border-bottom-color: var(--danger);
 }
+
+/* Linha do extrato de comissão: de onde veio cada valor a pagar. */
+.linha-extrato {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-muted);
+  font-size: 13.5px;
+}
+.linha-extrato strong {
+  white-space: nowrap;
+  color: var(--accent);
+}
+
+/* Lista de etiquetas (tipos de serviço). */
+.lista-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.chip-tipo {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  font-size: 13.5px;
+}
+.chip-tipo button {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 17px;
+  line-height: 1;
+  padding: 0 2px;
+}
+.chip-tipo button:hover:not(:disabled) {
+  color: var(--danger);
+}
+.chip-tipo button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}

@@ -14,10 +14,13 @@ import { criarMoto, buscarMotoPorPlaca, formatarPlaca, ErroMoto } from "@/lib/mo
  */
 
 export type ResultadoTipoServico =
-  | { ok: true; tipo: { id: string; nome: string } }
+  | { ok: true; tipo: { id: string; nome: string; valorSugerido: number | null } }
   | { ok: false; erro: string };
 
-export async function criarTipoServicoAction(nome: string): Promise<ResultadoTipoServico> {
+export async function criarTipoServicoAction(
+  nome: string,
+  valorSugerido?: number | null
+): Promise<ResultadoTipoServico> {
   let usuario;
   try {
     usuario = await requireEscrita("oficina");
@@ -27,16 +30,16 @@ export async function criarTipoServicoAction(nome: string): Promise<ResultadoTip
   }
 
   try {
-    const tipo = await criarTipoServico(nome);
+    const tipo = await criarTipoServico(nome, valorSugerido);
     await registrarAuditoria({
       usuarioId: usuario.id,
       acao: "tipo_servico.criar",
       entidade: "TipoServico",
       entidadeId: tipo.id,
-      detalhes: tipo.nome,
+      detalhes: tipo.valorSugerido ? tipo.nome + " (" + tipo.valorSugerido + " centavos)" : tipo.nome,
     });
     revalidatePath("/vendas/nova");
-    return { ok: true, tipo: { id: tipo.id, nome: tipo.nome } };
+    return { ok: true, tipo: { id: tipo.id, nome: tipo.nome, valorSugerido: tipo.valorSugerido } };
   } catch (erro) {
     if (erro instanceof ErroTipoServico) return { ok: false, erro: erro.message };
     throw erro;

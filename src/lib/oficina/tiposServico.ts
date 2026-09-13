@@ -17,9 +17,15 @@ export async function listarTiposServico() {
   });
 }
 
-export async function criarTipoServico(nome: string) {
+export async function criarTipoServico(nome: string, valorSugerido?: number | null) {
   const limpo = nome.trim();
   if (!limpo) throw new ErroTipoServico("Informe o nome do serviço.");
+
+  if (valorSugerido !== undefined && valorSugerido !== null) {
+    if (!Number.isInteger(valorSugerido) || valorSugerido < 0) {
+      throw new ErroTipoServico("Valor sugerido inválido.");
+    }
+  }
 
   const existente = await prisma.tipoServico.findFirst({
     where: { nome: { equals: limpo, mode: "insensitive" } },
@@ -28,11 +34,27 @@ export async function criarTipoServico(nome: string) {
   // Reaproveita em vez de recusar: se o tipo já existe (talvez arquivado), o
   // que o dono quer é usá-lo, não receber um erro no meio de uma venda.
   if (existente) {
-    if (existente.ativo) return existente;
-    return prisma.tipoServico.update({ where: { id: existente.id }, data: { ativo: true } });
+    return prisma.tipoServico.update({
+      where: { id: existente.id },
+      data: {
+        ativo: true,
+        // Só sobrescreve o valor se veio um novo — recadastrar sem valor não
+        // pode apagar o que já estava lá.
+        ...(valorSugerido !== undefined && valorSugerido !== null ? { valorSugerido } : {}),
+      },
+    });
   }
 
-  return prisma.tipoServico.create({ data: { nome: limpo } });
+  return prisma.tipoServico.create({
+    data: { nome: limpo, valorSugerido: valorSugerido ?? null },
+  });
+}
+
+export async function definirValorSugerido(id: string, valorSugerido: number | null) {
+  if (valorSugerido !== null && (!Number.isInteger(valorSugerido) || valorSugerido < 0)) {
+    throw new ErroTipoServico("Valor sugerido inválido.");
+  }
+  return prisma.tipoServico.update({ where: { id }, data: { valorSugerido } });
 }
 
 export async function arquivarTipoServico(id: string) {

@@ -5,6 +5,8 @@ import { prisma } from "@/lib/db";
 import { socioDaOficina } from "@/lib/oficina/mecanicos";
 import { MecanicoForm } from "./MecanicoForm";
 import { MecanicoLinha, type MecanicoLinhaProps } from "./MecanicoLinha";
+import { TiposServico } from "./TiposServico";
+import { listarTiposServico } from "@/lib/oficina/tiposServico";
 import { ehAdministrador } from "@/lib/permissoes";
 
 /**
@@ -29,6 +31,8 @@ export default async function MecanicosPage() {
     }),
     socioDaOficina(),
   ]);
+
+  const tipos = await listarTiposServico();
 
   const linhas: MecanicoLinhaProps[] = mecanicos.map((m) => {
     const doMecanico = agrupado.filter((l) => l.mecanicoId === m.id);
@@ -66,6 +70,8 @@ export default async function MecanicosPage() {
           <MecanicoForm />
         </section>
       )}
+
+      <TiposServico iniciais={tipos.map((t) => ({ id: t.id, nome: t.nome, valorSugerido: t.valorSugerido }))} podeEditar={ehDono} />
 
       <section>
         <h2 className="label-caps mb-3">Mecânicos</h2>

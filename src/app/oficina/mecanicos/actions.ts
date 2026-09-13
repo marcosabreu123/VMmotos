@@ -11,6 +11,7 @@ import {
   excluirMecanico,
   ErroMecanico,
 } from "@/lib/oficina/mecanicos";
+import { arquivarTipoServico } from "@/lib/oficina/tiposServico";
 
 /**
  * Administração do cadastro de mecânicos.
@@ -129,5 +130,28 @@ export async function excluirMecanicoAction(mecanicoId: string): Promise<Resulta
   });
 
   revalidatePath("/oficina/mecanicos");
+  return resultado.ok ? { ok: true } : { ok: false, erro: resultado.erro };
+}
+
+/**
+ * Tira um tipo de serviço da lista.
+ *
+ * Arquiva em vez de apagar: serviços já lançados apontam para ele, e apagar
+ * arrancaria o vínculo de vendas antigas.
+ */
+export async function arquivarTipoServicoAction(id: string): Promise<ResultadoMecanico> {
+  const resultado = await comDono(async (usuarioId) => {
+    const tipo = await arquivarTipoServico(id);
+    await registrarAuditoria({
+      usuarioId,
+      acao: "tipo_servico.arquivar",
+      entidade: "TipoServico",
+      entidadeId: id,
+      detalhes: tipo.nome,
+    });
+  });
+
+  revalidatePath("/oficina/mecanicos");
+  revalidatePath("/vendas/nova");
   return resultado.ok ? { ok: true } : { ok: false, erro: resultado.erro };
 }

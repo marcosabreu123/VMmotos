@@ -51,7 +51,7 @@ export default async function NovaVendaPage({
       <CarrinhoVenda
         itensIniciais={itensIniciais}
         mecanicos={mecanicos.map((m) => ({ id: m.id, nome: m.nome, socioOficina: m.socioOficina }))}
-        tiposServico={tiposServico.map((t) => ({ id: t.id, nome: t.nome }))}
+        tiposServico={tiposServico.map((t) => ({ id: t.id, nome: t.nome, valorSugerido: t.valorSugerido }))}
       />
     </AppShell>
   );

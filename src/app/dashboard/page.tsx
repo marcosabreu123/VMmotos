@@ -107,10 +107,17 @@ const DIA_A_DIA: Item[] = [
     recurso: "motos",
   },
   {
+    href: "/oficina/comissoes",
+    icone: <IconDinheiro {...TAMANHO_ICONE} />,
+    titulo: "Comissões",
+    ajuda: "O que cada mecânico tem a receber",
+    recurso: "oficina",
+  },
+  {
     href: "/oficina/mecanicos",
     icone: <IconRepasse {...TAMANHO_ICONE} />,
     titulo: "Mão de obra",
-    ajuda: "Mecânicos e quanto têm a receber",
+    ajuda: "Mecânicos e tipos de serviço",
     recurso: "oficina",
   },
   {
@@ -259,7 +266,7 @@ export default async function DashboardPage() {
         <Resumo
           rotulo="Mão de obra a pagar"
           valor={centavosParaReais(repasses.aPagarCentavos)}
-          href="/oficina/mecanicos"
+          href="/oficina/comissoes"
           alerta={repasses.aPagarCentavos > 0}
         />
       </section>

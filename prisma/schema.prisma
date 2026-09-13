@@ -793,6 +793,10 @@ model FechamentoRepasse {
 model TipoServico {
   id        String   @id @default(cuid())
   nome      String   @unique
+  /// centavos — valor de referência que já vem preenchido na venda. Opcional
+  /// porque muito serviço é negociado na hora; e mesmo preenchido continua
+  /// editável na venda, sem alterar o cadastro.
+  valorSugerido Int?
   ativo     Boolean  @default(true)
   createdAt DateTime @default(now())
 

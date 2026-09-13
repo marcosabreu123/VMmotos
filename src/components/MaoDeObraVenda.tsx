@@ -18,12 +18,17 @@ import { criarTipoServicoAction, acharOuCriarMotoAction } from "@/app/vendas/ofi
  */
 
 export type MecanicoOpcao = { id: string; nome: string; socioOficina: boolean };
-export type TipoServicoOpcao = { id: string; nome: string };
+export type TipoServicoOpcao = { id: string; nome: string; valorSugerido: number | null };
+
+/** Valor sentinela do select para "serviço fora da lista". */
+const OUTRO = "__outro__";
 
 export type ServicoLocal = {
   /** chave local só para o React; não vai para o servidor */
   chave: string;
   tipoServicoId: string | null;
+  /** true = o dono escolheu "Outro" e vai descrever o serviço à mão. */
+  outro: boolean;
   descricao: string;
   valorStr: string;
   executorId: string;
@@ -68,6 +73,7 @@ export function MaoDeObraVenda({
       {
         chave: novaChave(),
         tipoServicoId: null,
+        outro: false,
         descricao: "",
         valorStr: "",
         executorId,
@@ -265,13 +271,26 @@ export function MaoDeObraVenda({
                       <label className="label">Serviço</label>
                       <select
                         className="input"
-                        value={servico.tipoServicoId ?? ""}
+                        value={servico.tipoServicoId ?? (servico.outro ? OUTRO : "")}
                         onChange={(e) => {
-                          const id = e.target.value || null;
-                          const tipo = tipos.find((t) => t.id === id);
+                          const valor = e.target.value;
+                          if (valor === OUTRO) {
+                            atualizar(servico.chave, { tipoServicoId: null, outro: true, descricao: "" });
+                            return;
+                          }
+                          const tipo = tipos.find((t) => t.id === valor);
+                          const jaDigitou = reaisParaCentavos(servico.valorStr || "0") > 0;
                           atualizar(servico.chave, {
-                            tipoServicoId: id,
-                            descricao: tipo ? tipo.nome : servico.descricao,
+                            tipoServicoId: valor || null,
+                            outro: false,
+                            descricao: tipo ? tipo.nome : "",
+                            // Puxa o valor do cadastro, mas nunca por cima do
+                            // que o dono já digitou — na oficina o preço é
+                            // negociado, e apagar o combinado seria pior do
+                            // que não sugerir nada.
+                            ...(tipo?.valorSugerido && !jaDigitou
+                              ? { valorStr: (tipo.valorSugerido / 100).toFixed(2).replace(".", ",") }
+                              : {}),
                           });
                         }}
                       >
@@ -281,15 +300,11 @@ export function MaoDeObraVenda({
                             {t.nome}
                           </option>
                         ))}
+                        {/* Opção explícita em vez de um campo solto aparecendo
+                            sozinho embaixo do select — que é o que confundia:
+                            um quarto campo sem rótulo, sem se saber para quê. */}
+                        <option value={OUTRO}>Outro — vou descrever</option>
                       </select>
-                      {!servico.tipoServicoId && (
-                        <input
-                          className="input mt-2"
-                          placeholder="ou descreva o serviço"
-                          value={servico.descricao}
-                          onChange={(e) => atualizar(servico.chave, { descricao: e.target.value })}
-                        />
-                      )}
                     </div>
 
                     <div>
@@ -319,6 +334,25 @@ export function MaoDeObraVenda({
                       />
                     </div>
                   </div>
+
+                  {/* Só aparece quando "Outro" foi escolhido de propósito, e
+                      aí ocupa a linha inteira e tem rótulo. */}
+                  {servico.outro && (
+                    <div className="mt-3">
+                      <label className="label">Qual serviço foi feito?</label>
+                      <input
+                        className="input"
+                        placeholder="Ex.: Ajuste no carburador"
+                        value={servico.descricao}
+                        onChange={(e) => atualizar(servico.chave, { descricao: e.target.value })}
+                        autoFocus
+                      />
+                      <p className="ajuda">
+                        Serviço que se repete vale cadastrar como tipo, abaixo —
+                        aí ele fica na lista para a próxima vez.
+                      </p>
+                    </div>
+                  )}
 
                   {/* Para onde vai o dinheiro, à vista, antes de fechar. */}
                   <div className="divisao-servico">
