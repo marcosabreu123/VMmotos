@@ -293,3 +293,48 @@ export function IconMic(props: SVGProps<SVGSVGElement>) {
     </Svg>
   );
 }
+
+// ---------- Oficina (VM Moto Peças) ----------
+
+export function IconMoto(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Svg {...props}>
+      <circle cx="5" cy="17" r="3.2" />
+      <circle cx="19" cy="17" r="3.2" />
+      <path d="M5 17h4l3.5-5H8.5" />
+      <path d="M12.5 12l3 5" />
+      <path d="M13.5 8h3l2.5 4" />
+      <path d="M15.5 8l-1.2-2H12" />
+    </Svg>
+  );
+}
+
+export function IconServico(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Svg {...props}>
+      <path d="M14.5 6.2a3.8 3.8 0 0 0 5 5l-8.8 8.8a2.4 2.4 0 0 1-3.4-3.4z" />
+      <path d="M14.5 6.2 17 3.7a4.8 4.8 0 0 1 3.6 3.6L18 9.8" />
+    </Svg>
+  );
+}
+
+export function IconRepasse(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Svg {...props}>
+      <circle cx="9" cy="8" r="3.2" />
+      <path d="M3.5 20a5.5 5.5 0 0 1 11 0" />
+      <path d="M16.5 11.5h5" />
+      <path d="M19.5 9l2.2 2.5-2.2 2.5" />
+    </Svg>
+  );
+}
+
+export function IconHome(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Svg {...props}>
+      <path d="M3.5 10.5 12 3.5l8.5 7" />
+      <path d="M5.5 9.5V20h13V9.5" />
+      <path d="M9.5 20v-6h5v6" />
+    </Svg>
+  );
+}

@@ -11,7 +11,9 @@ export type Recurso =
   | "relatorios"
   | "usuarios"
   | "despesas"
-  | "fretes";
+  | "fretes"
+  | "motos"
+  | "oficina";
 
 export type Nivel = "nenhum" | "leitura" | "escrita";
 
@@ -26,6 +28,8 @@ const TUDO_ESCRITA: Record<Recurso, Nivel> = {
   usuarios: "escrita",
   despesas: "escrita",
   fretes: "escrita",
+  motos: "escrita",
+  oficina: "escrita",
 };
 
 // Matriz simples recurso × papel × nível — não é uma ACL genérica, é o
@@ -44,6 +48,8 @@ const MATRIZ: Record<Papel, Record<Recurso, Nivel>> = {
     usuarios: "nenhum",
     despesas: "nenhum",
     fretes: "escrita",
+    motos: "escrita",
+    oficina: "nenhum",
   },
   ESTOQUE: {
     produtos: "escrita",
@@ -56,6 +62,8 @@ const MATRIZ: Record<Papel, Record<Recurso, Nivel>> = {
     usuarios: "nenhum",
     despesas: "nenhum",
     fretes: "escrita",
+    motos: "leitura",
+    oficina: "nenhum",
   },
   CONSULTA: {
     vendas: "leitura",
@@ -68,6 +76,8 @@ const MATRIZ: Record<Papel, Record<Recurso, Nivel>> = {
     usuarios: "nenhum",
     despesas: "leitura",
     fretes: "leitura",
+    motos: "leitura",
+    oficina: "leitura",
   },
 };
 

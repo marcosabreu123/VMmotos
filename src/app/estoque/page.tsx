@@ -23,6 +23,14 @@ export default async function EstoquePage() {
         title="Estoque"
         action={
           <div className="flex flex-wrap gap-2">
+            {/* Inventário e Lotes não tinham link de lugar nenhum no molde —
+                as telas existiam mas eram inalcançáveis pela navegação. */}
+            <Link href="/estoque/inventario" className="btn btn-outline">
+              Conferir estoque
+            </Link>
+            <Link href="/estoque/lotes" className="btn btn-outline">
+              Lotes
+            </Link>
             <Link href="/estoque/insumos" className="btn btn-outline">
               Insumos
             </Link>

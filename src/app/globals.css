@@ -323,6 +323,12 @@ body {
   background: var(--warning-soft);
   color: var(--warning);
 }
+/* Marca de destaque neutro (não é alerta nem erro): "Sócio", "Principal". */
+.badge-accent {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: var(--accent-active-border);
+}
 
 .spinner {
   display: inline-block;
@@ -345,201 +351,130 @@ body {
   to { transform: rotate(360deg); }
 }
 
-/* ---------- Sidebar fixa ---------- */
+/* ---------- Topo do app ----------
+   O menu lateral foi removido a pedido do dono: toda a navegação passa pelos
+   atalhos da tela inicial. Cada página interna carrega só o essencial no
+   topo — voltar ao início, a marca e sair. Menos lugar para se perder, que
+   é o ponto para quem não é usuário de sistema.
+   ---------------------------------------------------------------- */
 .app-layout {
   display: flex;
+  flex-direction: column;
   min-height: 100vh;
 }
-.sidebar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  width: 264px;
-  display: flex;
-  flex-direction: column;
-  background: var(--surface);
-  border-right: 1px solid var(--border);
-  z-index: 20;
-}
-.sidebar-brand {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 24px 20px 0;
-}
-.sidebar-brand img {
-  width: 40px;
-  height: 40px;
-  border-radius: 999px;
-  object-fit: cover;
-}
-.sidebar-nav {
+.main-content {
+  width: 100%;
+  min-width: 0;
   flex: 1;
-  overflow-y: auto;
-  padding: 16px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
 }
-.sidebar-grupo {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  margin-bottom: 14px;
-}
-.sidebar-grupo-titulo {
-  padding: 8px 14px 4px;
-  font-size: 11px;
-  opacity: 0.7;
-}
-.sidebar-link {
+
+.topo-app {
+  position: sticky;
+  top: 0;
+  z-index: 30;
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 11px 14px;
-  border-radius: 10px;
-  border-left: 3px solid transparent;
-  color: var(--muted);
-  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  /* Fundo quase opaco + blur: o conteúdo rola por baixo sem embaralhar o topo. */
+  background: rgba(10, 10, 11, 0.9);
+  backdrop-filter: blur(10px);
 }
-.sidebar-link svg {
-  width: 18px;
-  height: 18px;
+@media (min-width: 1024px) {
+  .topo-app { padding: 12px 32px; }
+}
+
+/* Botão de voltar ao início. Alvo grande e com a palavra escrita: só a seta
+   ou só a casinha não se entende de primeira. */
+.topo-inicio {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-weight: 600;
+  font-size: 14px;
   flex-shrink: 0;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
 }
-.sidebar-link:hover {
+.topo-inicio:hover {
+  border-color: var(--accent-active-border);
   background: var(--surface-muted);
-  color: var(--foreground);
 }
-.sidebar-link-active {
-  background: var(--accent-soft);
-  border-left-color: var(--accent-active-border);
-  color: var(--accent);
-}
-.sidebar-link-active:hover {
-  background: var(--accent-soft);
-  color: var(--accent);
-}
-.sidebar-footer {
-  padding: 16px 20px 20px;
-  border-top: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.sidebar-user {
+
+.topo-marca {
   display: flex;
   align-items: center;
   gap: 10px;
-}
-.main-content {
-  margin-left: 264px;
-  width: 100%;
   min-width: 0;
 }
-
-/* Barra superior e botões da gaveta — só existem visualmente abaixo de 900px. */
-.sidebar-topbar { display: none; }
-.sidebar-backdrop { display: none; }
-.sidebar-close-btn { display: none; }
-
-@media (max-width: 900px) {
-  .app-layout {
-    flex-direction: column;
-  }
-
-  /* Barra fina sempre visível: logo + botão de menu + avatar. */
-  .sidebar-topbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 12px 16px;
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-  }
-  .sidebar-topbar-brand {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  .sidebar-topbar-brand img {
-    width: 32px;
-    height: 32px;
-    border-radius: 999px;
-    object-fit: cover;
-  }
-  .sidebar-menu-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
-    border: 1px solid var(--border);
-    background: transparent;
-    color: var(--foreground);
-    flex-shrink: 0;
-  }
-  .sidebar-menu-btn:hover { background: var(--surface-muted); }
-
-  /* Fundo escurecido atrás da gaveta aberta. */
-  .sidebar-backdrop {
-    display: block;
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.55);
-    z-index: 35;
-  }
-
-  /* Gaveta lateral: escondida fora da tela, desliza ao abrir. */
-  .sidebar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    width: min(300px, 82vw);
-    height: 100%;
-    flex-direction: column;
-    flex-wrap: nowrap;
-    gap: 0;
-    padding: 0;
-    transform: translateX(-100%);
-    transition: transform 0.22s ease;
-    z-index: 40;
-    overflow-y: auto;
-  }
-  .sidebar.sidebar-open {
-    transform: translateX(0);
-  }
-  .sidebar-close-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 36px;
-    height: 36px;
-    border-radius: 999px;
-    background: var(--surface-muted);
-    color: var(--foreground);
-    align-self: flex-end;
-    margin: 12px 12px 0 auto;
-    flex-shrink: 0;
-  }
-  .sidebar-brand { padding: 4px 20px 0; }
-  .sidebar-nav {
-    flex-direction: column;
-    flex-wrap: nowrap;
-    padding: 16px 12px;
-    overflow-y: auto;
-  }
-  .sidebar-link { border-left: 3px solid transparent; border-bottom: none; padding: 11px 14px; }
-  .sidebar-link-active { border-bottom-color: transparent; border-left-color: var(--accent-active-border); }
-  .sidebar-footer { border-top: 1px solid var(--border); flex-direction: column; margin-left: 0; padding: 16px 20px 20px; }
-  .main-content { margin-left: 0; width: 100%; }
+.topo-marca img {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.topo-marca-nome {
+  font-family: var(--font-serif), 'Arial Narrow', system-ui, sans-serif;
+  font-size: 17px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* No celular a marca escrita sai: o espaço é do botão Início, que é o que
+   se usa. O logo continua, então a identidade não se perde. */
+@media (max-width: 560px) {
+  .topo-marca-nome { display: none; }
 }
 
-/* Avatar circular com iniciais — usado no seletor de cliente e no rodapé da sidebar. */
+.topo-direita {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.topo-usuario {
+  text-align: right;
+  line-height: 1.2;
+  min-width: 0;
+}
+.topo-usuario-nome {
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 160px;
+}
+@media (max-width: 720px) {
+  .topo-usuario { display: none; }
+}
+.topo-sair {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+.topo-sair:hover {
+  color: var(--foreground);
+  border-color: var(--accent-active-border);
+}
+
+/* Avatar circular com iniciais — usado no seletor de cliente e no topo do app. */
 .avatar {
   display: flex;
   align-items: center;
@@ -869,12 +804,9 @@ body {
 
 /* Impressão de recibo — esconde navegação e ações, mantém só o conteúdo da venda. */
 @media print {
-  .sidebar,
+  .topo-app,
   .no-print {
     display: none !important;
-  }
-  .main-content {
-    margin-left: 0 !important;
   }
   body {
     background: #fff;
@@ -922,4 +854,292 @@ body {
   .etiqueta {
     border: none;
   }
+}
+
+/* Texto de apoio embaixo de um campo ("Opcional.", formato esperado).
+   O molde repetia isso como style inline em cada formulário. */
+.ajuda {
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--muted);
+}
+
+/* ===================================================================
+   TELA INICIAL (VM Moto Peças)
+
+   O dono pediu uma tela que "pareça uma landing page": uma abertura de
+   marca, o resumo do dia e atalhos grandes para o resto do sistema.
+   Quem opera não é usuário técnico, então o alvo de toque é generoso e
+   cada atalho tem ícone + rótulo — ícone sozinho não se entende.
+
+   O scroll fica livre (decisão do dono): no celular, travar a tela
+   esconderia atalho que ele não teria como alcançar.
+   =================================================================== */
+
+.home-hero {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 28px 24px;
+  margin-bottom: 24px;
+}
+
+/* Brilho vermelho da marca, bem diluído. Fica atrás do texto e não recebe
+   clique. */
+.home-hero::after {
+  content: "";
+  position: absolute;
+  inset: -40% -10% auto auto;
+  width: 420px;
+  height: 420px;
+  background: radial-gradient(circle, rgba(225, 27, 34, 0.16) 0%, transparent 68%);
+  pointer-events: none;
+}
+
+.home-hero-conteudo {
+  position: relative;
+  z-index: 1;
+}
+
+.home-saudacao {
+  font-size: 13px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.home-nome {
+  font-family: var(--font-serif), "Arial Narrow", system-ui, sans-serif;
+  font-size: clamp(30px, 7vw, 46px);
+  font-weight: 700;
+  line-height: 1.05;
+  margin-top: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+}
+
+.home-hero-rodape {
+  margin-top: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.home-filete {
+  width: 46px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--primary);
+  margin-top: 16px;
+}
+
+/* ---- Resumo do dia ---- */
+
+.resumo-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 28px;
+}
+@media (min-width: 900px) {
+  .resumo-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.resumo-card {
+  display: block;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 16px 18px;
+  transition: border-color 0.15s ease, transform 0.05s ease;
+}
+a.resumo-card:hover {
+  border-color: var(--accent-active-border);
+}
+a.resumo-card:active {
+  transform: scale(0.99);
+}
+
+.resumo-rotulo {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.resumo-valor {
+  font-family: var(--font-serif), "Arial Narrow", system-ui, sans-serif;
+  font-size: clamp(24px, 5vw, 32px);
+  font-weight: 700;
+  line-height: 1.1;
+  margin-top: 6px;
+}
+
+/* Valor que representa dinheiro de terceiros (repasse pendente) — vermelho
+   da marca para o dono bater o olho e lembrar que aquilo não é lucro dele. */
+.resumo-valor-alerta {
+  color: var(--accent);
+}
+
+/* ---- Atalhos ---- */
+
+.atalho-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+@media (min-width: 640px) {
+  .atalho-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (min-width: 1000px) {
+  .atalho-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.atalho {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  min-height: 116px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  transition: border-color 0.15s ease, background-color 0.15s ease, transform 0.06s ease;
+}
+.atalho:hover {
+  border-color: var(--accent-active-border);
+  background: var(--surface-muted);
+}
+.atalho:active {
+  transform: scale(0.985);
+}
+
+/* O "balãozinho" com o ícone. */
+.atalho-bolha {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.atalho-titulo {
+  font-weight: 600;
+  font-size: 15px;
+  line-height: 1.25;
+}
+
+.atalho-ajuda {
+  font-size: 12.5px;
+  color: var(--muted);
+  line-height: 1.35;
+  margin-top: 2px;
+}
+
+/* Atalho principal (nova venda): ocupa a linha inteira no celular e recebe
+   o vermelho cheio — é a ação que mais acontece no balcão. */
+.atalho-principal {
+  grid-column: 1 / -1;
+  flex-direction: row;
+  align-items: center;
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-foreground);
+  min-height: 84px;
+}
+.atalho-principal:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+.atalho-principal .atalho-bolha {
+  background: rgba(255, 255, 255, 0.18);
+  color: var(--primary-foreground);
+}
+.atalho-principal .atalho-ajuda {
+  color: rgba(255, 255, 255, 0.82);
+}
+@media (min-width: 640px) {
+  .atalho-principal {
+    grid-column: span 3;
+  }
+}
+@media (min-width: 1000px) {
+  .atalho-principal {
+    grid-column: span 2;
+  }
+}
+
+/* Atalhos secundários — gestão e configuração.
+   Mesma linguagem dos atalhos principais, em menor escala: são telas que o
+   dono abre de vez em quando, não no balcão. Sem o menu lateral, é por aqui
+   que elas continuam alcançáveis, então nenhuma pode ficar de fora. */
+.atalho-mini-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+@media (min-width: 640px) {
+  .atalho-mini-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (min-width: 1000px) {
+  .atalho-mini-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.atalho-mini {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  font-size: 14px;
+  font-weight: 500;
+  /* Alvo de toque confortável mesmo sendo o atalho "pequeno". */
+  min-height: 56px;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+.atalho-mini:hover {
+  border-color: var(--accent-active-border);
+  background: var(--surface-muted);
+}
+
+.atalho-mini-bolha {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+/* Separador entre os blocos de atalho. */
+.home-secao {
+  margin-top: 32px;
 }

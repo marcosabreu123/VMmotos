@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Sidebar } from "./Sidebar";
+import { TopoApp } from "./TopoApp";
 import { AssistenteBotaoFlutuante } from "./assistente/AssistenteBotaoFlutuante";
 import type { SessaoUsuario } from "@/lib/types";
 
@@ -14,7 +14,7 @@ export function AppShell({
 }) {
   return (
     <div className="app-layout">
-      <Sidebar usuario={usuario} />
+      <TopoApp usuario={usuario} />
       <main className="main-content">
         <div className={`${wide ? "app-shell-wide" : "app-shell"} py-8`}>{children}</div>
       </main>
