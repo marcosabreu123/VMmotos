@@ -10,11 +10,13 @@ import {
   atualizarProduto,
   buscarProdutoPorId,
   criarProduto,
+  gerarSku,
   type DadosProduto,
 } from "@/lib/produtos";
 import { salvarFotoProduto } from "@/lib/storage";
 import { reaisParaCentavos } from "@/lib/money";
 import type { TipoVenda } from "@prisma/client";
+import { nicho } from "@/config/nicho";
 
 export type EstadoProduto = { erro?: string };
 
@@ -24,8 +26,13 @@ function lerDadosProduto(formData: FormData): DadosProduto | { erro: string } {
   const categoria = String(formData.get("categoria") ?? "").trim();
   const sku = String(formData.get("sku") ?? "").trim();
 
-  if (!nome || !marca || !categoria || !sku) {
-    return { erro: "Preencha nome, marca, categoria e SKU." };
+  // O código deixou de ser obrigatório: quem cadastra a peça no balcão não tem
+  // um para inventar, e o lançamento de pedido já gera sozinho. Fica em branco
+  // aqui e é gerado antes de gravar.
+  if (!nome || !marca || !categoria) {
+    return {
+      erro: `Preencha nome, ${nicho.termos.marca.toLowerCase()} e ${nicho.termos.categoria.toLowerCase()}.`,
+    };
   }
 
   const precoCustoRef = reaisParaCentavos(String(formData.get("precoCustoRef") ?? "0"));
@@ -74,7 +81,12 @@ export async function criarProdutoAction(
 
   let produtoId: string;
   try {
-    const produto = await criarProduto(dados);
+    // Código em branco = o sistema gera. Mesma regra do cadastro rápido no
+    // lançamento de pedido, para a peça nunca nascer sem identificação.
+    const produto = await criarProduto({
+      ...dados,
+      sku: dados.sku || (await gerarSku(dados.nome)),
+    });
     produtoId = produto.id;
     await registrarAuditoria({
       usuarioId: usuario.id,
@@ -84,7 +96,7 @@ export async function criarProdutoAction(
       detalhes: produto.nome,
     });
   } catch {
-    return { erro: "Não foi possível salvar. Confira se o SKU/código de barras já não está em uso." };
+    return { erro: "Não foi possível salvar. Confira se o código ou o código de barras já não está em uso." };
   }
 
   const foto = formData.get("foto");
@@ -120,7 +132,9 @@ export async function atualizarProdutoAction(
   }
 
   try {
-    await atualizarProduto(produtoId, dados);
+    // Campo em branco na edição mantém o código que a peça já tinha: gerar
+    // um novo trocaria a identidade de uma peça em uso.
+    await atualizarProduto(produtoId, { ...dados, sku: dados.sku || produtoAtual.sku });
     await registrarAuditoria({
       usuarioId: usuario.id,
       acao: "produto.atualizar",
@@ -129,7 +143,7 @@ export async function atualizarProdutoAction(
       detalhes: dados.nome,
     });
   } catch {
-    return { erro: "Não foi possível salvar. Confira se o SKU/código de barras já não está em uso." };
+    return { erro: "Não foi possível salvar. Confira se o código ou o código de barras já não está em uso." };
   }
 
   const foto = formData.get("foto");

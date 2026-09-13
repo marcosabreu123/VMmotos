@@ -179,7 +179,7 @@ export class ErroProduto extends Error {}
  * fato no banco em vez de confiar no acaso, e tenta de novo se dois
  * lançamentos caírem no mesmo código ao mesmo tempo.
  */
-async function gerarSku(nome: string): Promise<string> {
+export async function gerarSku(nome: string): Promise<string> {
   const prefixo =
     nome
       .normalize("NFD")

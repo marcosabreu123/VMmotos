@@ -3,6 +3,7 @@ import { requireLeitura } from "@/lib/permissoes-servidor";
 import { AppShell } from "@/components/AppShell";
 import { PageHeader } from "@/components/PageHeader";
 import { ImportarProdutosForm } from "@/components/ImportarProdutosForm";
+import { nicho } from "@/config/nicho";
 
 export default async function ImportarProdutosPage() {
   const usuario = await requireLeitura("produtos");
@@ -10,7 +11,7 @@ export default async function ImportarProdutosPage() {
   return (
     <AppShell usuario={usuario}>
       <PageHeader
-        title="Importar produtos"
+        title={`Importar ${nicho.termos.produto.plural.toLowerCase()}`}
         action={
           <a href="/api/produtos/exportar" className="btn btn-outline">
             Baixar modelo (exportar CSV atual)

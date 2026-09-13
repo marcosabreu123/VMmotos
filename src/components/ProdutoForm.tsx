@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 import type { EstadoProduto } from "@/app/produtos/actions";
-import { nicho, rotuloMedida } from "@/config/nicho";
+import { nicho, rotuloMedida, usaVendaFracionada } from "@/config/nicho";
 
 type FornecedorOpcao = { id: string; nome: string };
 
@@ -57,7 +57,7 @@ export function ProdutoForm({
         </div>
         <div>
           <label className="label" htmlFor="marca">
-            Marca *
+            {nicho.termos.marca} *
           </label>
           <input
             id="marca"
@@ -72,7 +72,7 @@ export function ProdutoForm({
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div>
           <label className="label" htmlFor="categoria">
-            Categoria *
+            {nicho.termos.categoria} *
           </label>
           <input
             id="categoria"
@@ -132,15 +132,18 @@ export function ProdutoForm({
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
           <label className="label" htmlFor="sku">
-            SKU *
+            Código
           </label>
           <input
             id="sku"
             name="sku"
-            required
             defaultValue={valoresIniciais?.sku}
             className="input"
           />
+          {/* Deixou de ser obrigatório: o lançamento de pedido já gera o código
+              sozinho, e exigir aqui obrigava o dono a inventar um no balcão —
+              justamente o atrito que fazia o cadastro não acontecer. */}
+          <p className="ajuda">Deixe em branco para o sistema gerar.</p>
         </div>
         <div>
           <label className="label" htmlFor="codigoBarras">
@@ -216,6 +219,12 @@ export function ProdutoForm({
             )}
           </div>
         )}
+        {/* Venda fracionada desligada no nicho = o campo não existe. Mostrá-lo
+            oferecia uma opção que o resto do sistema não suporta, e o dono não
+            tinha como saber disso. O valor vai fixo como unidade. */}
+        {!usaVendaFracionada ? (
+          <input type="hidden" name="tipoVenda" value="UNIDADE" />
+        ) : (
         <div>
           <label className="label" htmlFor="tipoVenda">
             Tipo de venda
@@ -243,6 +252,7 @@ export function ProdutoForm({
             </select>
           )}
         </div>
+        )}
         <div>
           <label className="label" htmlFor="estoqueMinimo">
             Estoque mínimo
@@ -260,7 +270,7 @@ export function ProdutoForm({
 
       <div>
         <label className="label" htmlFor="fornecedorId">
-          Fornecedor
+          {nicho.termos.fornecedor.singular}
         </label>
         <select
           id="fornecedorId"
@@ -268,7 +278,7 @@ export function ProdutoForm({
           defaultValue={valoresIniciais?.fornecedorId ?? ""}
           className="input"
         >
-          <option value="">Sem fornecedor vinculado</option>
+          <option value="">Sem {nicho.termos.fornecedor.singular.toLowerCase()} vinculado</option>
           {fornecedores.map((fornecedor) => (
             <option key={fornecedor.id} value={fornecedor.id}>
               {fornecedor.nome}
@@ -279,13 +289,13 @@ export function ProdutoForm({
 
       <div>
         <label className="label" htmlFor="foto">
-          Foto do produto
+          Foto da {nicho.termos.produto.singular.toLowerCase()}
         </label>
         {valoresIniciais?.fotoPath && (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={valoresIniciais.fotoPath}
-            alt="Foto atual do produto"
+            alt={`Foto atual da ${nicho.termos.produto.singular.toLowerCase()}`}
             className="mb-2 h-24 w-24 rounded-lg object-cover"
           />
         )}
@@ -299,7 +309,7 @@ export function ProdutoForm({
       )}
 
       <button type="submit" className="btn btn-primary btn-block" disabled={pendente}>
-        {pendente ? <span className="spinner" /> : "Salvar produto"}
+        {pendente ? <span className="spinner" /> : `Salvar ${nicho.termos.produto.singular.toLowerCase()}`}
       </button>
     </form>
   );

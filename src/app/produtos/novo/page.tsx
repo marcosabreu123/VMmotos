@@ -5,6 +5,7 @@ import { ProdutoForm } from "@/components/ProdutoForm";
 import { listarFornecedores } from "@/lib/fornecedores";
 import { podeVerCustos } from "@/lib/permissoes";
 import { criarProdutoAction } from "../actions";
+import { nicho } from "@/config/nicho";
 
 export default async function NovoProdutoPage() {
   const usuario = await requireUser();
@@ -12,7 +13,7 @@ export default async function NovoProdutoPage() {
 
   return (
     <AppShell usuario={usuario}>
-      <PageHeader title="Novo produto" />
+      <PageHeader title={`Nova ${nicho.termos.produto.singular.toLowerCase()}`} />
       <ProdutoForm action={criarProdutoAction} fornecedores={fornecedores} podeVerCustos={podeVerCustos(usuario.papel)} />
     </AppShell>
   );
