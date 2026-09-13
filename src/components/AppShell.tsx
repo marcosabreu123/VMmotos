@@ -1,8 +1,9 @@
 import type { ReactNode } from "react";
 import { TopoApp } from "./TopoApp";
+import { listarAlertas } from "@/lib/alertas";
 import type { SessaoUsuario } from "@/lib/types";
 
-export function AppShell({
+export async function AppShell({
   usuario,
   children,
   wide,
@@ -11,9 +12,13 @@ export function AppShell({
   children: ReactNode;
   wide?: boolean;
 }) {
+  // Os alertas são calculados no servidor, a cada página: são consultas
+  // rápidas de contagem, e assim o sino nunca mostra número velho.
+  const alertas = await listarAlertas(usuario);
+
   return (
     <div className="app-layout">
-      <TopoApp usuario={usuario} />
+      <TopoApp usuario={usuario} alertas={alertas} />
       <main className="main-content">
         <div className={`${wide ? "app-shell-wide" : "app-shell"} py-8`}>{children}</div>
       </main>

@@ -338,3 +338,12 @@ export function IconHome(props: SVGProps<SVGSVGElement>) {
     </Svg>
   );
 }
+
+export function IconSino(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Svg {...props}>
+      <path d="M18 9.5a6 6 0 1 0-12 0c0 5-2 6.5-2 6.5h16s-2-1.5-2-6.5" />
+      <path d="M13.7 19.5a2 2 0 0 1-3.4 0" />
+    </Svg>
+  );
+}
