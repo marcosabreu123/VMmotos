@@ -30,9 +30,10 @@ import {
  * Se você criar uma página nova e esquecer de listá-la, ela fica inalcançável
  * — não existe mais menu para socorrer.
  *
- * A divisão em dois blocos é o que mantém a tela simples sem esconder nada:
- * em cima o que se usa no balcão todo dia, embaixo o que o dono abre de vez
- * em quando.
+ * Todos os atalhos têm o mesmo tamanho, num grid único. A lista continua
+ * separada em duas constantes só por ordem de importância — o que se usa no
+ * balcão todo dia vem primeiro —, mas visualmente é um bloco só: dois blocos
+ * de tamanhos diferentes davam a impressão de dois sistemas na mesma tela.
  */
 
 type Item = {
@@ -66,7 +67,6 @@ function podeVer(usuario: SessaoUsuario, item: Item): boolean {
 }
 
 const TAMANHO_ICONE = { width: 22, height: 22 };
-const TAMANHO_ICONE_MINI = { width: 17, height: 17 };
 
 const DIA_A_DIA: Item[] = [
   {
@@ -125,32 +125,37 @@ const DIA_A_DIA: Item[] = [
 const GESTAO: Item[] = [
   {
     href: "/relatorios",
-    icone: <IconRelatorios {...TAMANHO_ICONE_MINI} />,
+    icone: <IconRelatorios {...TAMANHO_ICONE} />,
     titulo: "Relatórios",
+    ajuda: "Lucro, clientes e curva de peças",
     recurso: "relatorios",
   },
   {
     href: "/clientes/debitos",
-    icone: <IconDinheiro {...TAMANHO_ICONE_MINI} />,
+    icone: <IconDinheiro {...TAMANHO_ICONE} />,
     titulo: "Quem está devendo",
+    ajuda: "Clientes com conta em aberto",
     recurso: "clientes",
   },
   {
     href: "/fornecedores",
-    icone: <IconFornecedores {...TAMANHO_ICONE_MINI} />,
+    icone: <IconFornecedores {...TAMANHO_ICONE} />,
     titulo: nicho.termos.fornecedor.plural,
+    ajuda: "De quem você compra",
     recurso: "fornecedores",
   },
   {
     href: "/usuarios",
-    icone: <IconUsuarios {...TAMANHO_ICONE_MINI} />,
+    icone: <IconUsuarios {...TAMANHO_ICONE} />,
     titulo: "Usuários",
+    ajuda: "Quem entra no sistema",
     somenteDono: true,
   },
   {
     href: "/auditoria",
-    icone: <IconAuditoria {...TAMANHO_ICONE_MINI} />,
+    icone: <IconAuditoria {...TAMANHO_ICONE} />,
     titulo: "Auditoria",
+    ajuda: "Tudo que foi alterado",
     somenteDono: true,
   },
 ];
@@ -198,17 +203,6 @@ function Atalho({ item }: { item: Item }) {
         <span className="atalho-titulo">{item.titulo}</span>
         {item.ajuda && <span className="atalho-ajuda block">{item.ajuda}</span>}
       </span>
-    </Link>
-  );
-}
-
-function AtalhoMini({ item }: { item: Item }) {
-  return (
-    <Link href={item.href} className="atalho-mini">
-      <span className="atalho-mini-bolha" aria-hidden="true">
-        {item.icone}
-      </span>
-      <span>{item.titulo}</span>
     </Link>
   );
 }
@@ -270,25 +264,17 @@ export default async function DashboardPage() {
         />
       </section>
 
+      {/* Um grid só, todos do mesmo tamanho. Antes a gestão ficava embaixo em
+          atalhos menores, o que fazia parecer haver dois sistemas na mesma
+          tela. */}
       <section>
         <h2 className="label-caps mb-3">O que você quer fazer</h2>
         <div className="atalho-grid">
-          {diaADia.map((item) => (
+          {[...diaADia, ...gestao].map((item) => (
             <Atalho key={item.href} item={item} />
           ))}
         </div>
       </section>
-
-      {gestao.length > 0 && (
-        <section className="home-secao">
-          <h2 className="label-caps mb-3">Gestão e cadastros</h2>
-          <div className="atalho-mini-grid">
-            {gestao.map((item) => (
-              <AtalhoMini key={item.href} item={item} />
-            ))}
-          </div>
-        </section>
-      )}
     </AppShell>
   );
 }

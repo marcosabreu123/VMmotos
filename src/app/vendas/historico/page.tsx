@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { listarVendas, type FiltrosVendas } from "@/lib/vendas";
 import { listarUsuarios } from "@/lib/usuarios";
 import { inicioDoPeriodo } from "@/lib/relatorios";
+import { podeVerVendasCanceladas } from "@/lib/permissoes";
 import { centavosParaReais, reaisParaCentavos } from "@/lib/money";
 import type { FormaPagamento, StatusVenda } from "@prisma/client";
 
@@ -66,6 +67,9 @@ export default async function HistoricoVendasPage({
     comDesconto: params.comDesconto === "1",
     pagina: params.pagina ? Number(params.pagina) : 1,
     porPagina: 20,
+    // Vendedor não vê venda cancelada. Vai no filtro, e não na montagem da
+    // lista, para valer inclusive se ele forçar ?status=CANCELADA na URL.
+    ocultarCanceladas: !podeVerVendasCanceladas(usuario.papel),
   };
 
   const [{ vendas, total, pagina, totalPaginas }, vendedores] = await Promise.all([
@@ -95,11 +99,15 @@ export default async function HistoricoVendasPage({
         />
         <select name="status" defaultValue={params.status ?? ""} className="input">
           <option value="">Todos os status</option>
-          {Object.entries(LABEL_STATUS).map(([valor, label]) => (
-            <option key={valor} value={valor}>
-              {label}
-            </option>
-          ))}
+          {Object.entries(LABEL_STATUS)
+            // Não oferece "Cancelada" a quem não pode vê-las: o filtro existiria
+            // só para devolver lista vazia, o que parece defeito.
+            .filter(([valor]) => valor !== "CANCELADA" || podeVerVendasCanceladas(usuario.papel))
+            .map(([valor, label]) => (
+              <option key={valor} value={valor}>
+                {label}
+              </option>
+            ))}
         </select>
         <select name="formaPagamento" defaultValue={params.formaPagamento ?? ""} className="input">
           <option value="">Todas as formas de pagamento</option>

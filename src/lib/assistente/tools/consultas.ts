@@ -3,6 +3,7 @@ import { buscarClientes } from "@/lib/clientes";
 import { buscarProdutosParaVenda, buscarProdutoPorId, estoqueTotalProduto } from "@/lib/produtos";
 import { listarVisaoEstoque } from "@/lib/estoque";
 import { listarVendas, buscarVendaPorId, type FiltrosVendas } from "@/lib/vendas";
+import { podeVerVendasCanceladas } from "@/lib/permissoes";
 import { listarFornecedores } from "@/lib/fornecedores";
 import { listarPedidos, buscarPedidoPorId, type FiltrosPedidos } from "@/lib/compras";
 import { listarDespesas, type FiltrosDespesas } from "@/lib/despesas";
@@ -242,7 +243,7 @@ export const ferramentasConsulta: FerramentaAssistente[] = [
         busca: { type: "string", description: "Texto livre: id da venda, nome/telefone do cliente ou nome do produto" },
       },
     },
-    handler: async (args) => {
+    handler: async (args, usuario) => {
       const filtros: FiltrosVendas = { porPagina: 15 };
       const dataInicio = texto(args.dataInicio);
       const dataFim = texto(args.dataFim);
@@ -258,6 +259,10 @@ export const ferramentasConsulta: FerramentaAssistente[] = [
       if (status) filtros.status = status as StatusVenda;
       const busca = texto(args.busca);
       if (busca) filtros.busca = busca;
+
+      // Mesma regra das telas: vendedor não enxerga venda cancelada, nem
+      // perguntando ao assistente.
+      filtros.ocultarCanceladas = !podeVerVendasCanceladas(usuario.papel);
 
       const resultado = await listarVendas(filtros);
       const resumo = resultado.vendas.map((venda) => ({

@@ -7,7 +7,7 @@ import { LABEL_TIPO_MOVIMENTACAO } from "@/lib/estoque";
 import { centavosParaReais } from "@/lib/money";
 import { montarLinkWhatsAppResumoVenda } from "@/lib/whatsapp";
 import { listarInsumos, listarUsosPorVenda } from "@/lib/insumos";
-import { podeVerCustos } from "@/lib/permissoes";
+import { podeVerCustos, podeVerVendasCanceladas } from "@/lib/permissoes";
 import { VendaAcoes } from "./VendaAcoes";
 import type { FormaPagamento, StatusVenda } from "@prisma/client";
 
@@ -41,6 +41,12 @@ export default async function VendaDetalhePage({
 
   const venda = await buscarVendaPorId(vendaId);
   if (!venda) notFound();
+
+  // Esconder a venda cancelada da lista não basta: sem isto, o endereço
+  // direto continuaria abrindo a venda que o vendedor não deveria ver.
+  if (venda.status === "CANCELADA" && !podeVerVendasCanceladas(usuario.papel)) {
+    notFound();
+  }
 
   const [insumosAtivos, usosInsumo] = await Promise.all([listarInsumos(), listarUsosPorVenda(vendaId)]);
   const podeVerCusto = podeVerCustos(usuario.papel);

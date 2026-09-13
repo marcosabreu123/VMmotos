@@ -1083,62 +1083,6 @@ a.resumo-card:active {
   }
 }
 
-/* Atalhos secundários — gestão e configuração.
-   Mesma linguagem dos atalhos principais, em menor escala: são telas que o
-   dono abre de vez em quando, não no balcão. Sem o menu lateral, é por aqui
-   que elas continuam alcançáveis, então nenhuma pode ficar de fora. */
-.atalho-mini-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-@media (min-width: 640px) {
-  .atalho-mini-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-@media (min-width: 1000px) {
-  .atalho-mini-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-}
-
-.atalho-mini {
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  padding: 12px 14px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: var(--surface);
-  font-size: 14px;
-  font-weight: 500;
-  /* Alvo de toque confortável mesmo sendo o atalho "pequeno". */
-  min-height: 56px;
-  transition: border-color 0.15s ease, background-color 0.15s ease;
-}
-.atalho-mini:hover {
-  border-color: var(--accent-active-border);
-  background: var(--surface-muted);
-}
-
-.atalho-mini-bolha {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 999px;
-  background: var(--accent-soft);
-  color: var(--accent);
-  flex-shrink: 0;
-}
-
-/* Separador entre os blocos de atalho. */
-.home-secao {
-  margin-top: 32px;
-}
-
 /* ---------- Tabela de preços em massa ----------
    Custo, venda, lucro e margem de todas as peças numa tela só. A tabela rola
    dentro do próprio container (nunca a página inteira na horizontal) e a

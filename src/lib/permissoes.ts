@@ -100,3 +100,16 @@ export function podeEscrever(usuario: SessaoUsuario, recurso: Recurso): boolean 
 export function podeVerCustos(papel: Papel): boolean {
   return papel !== "SELLER";
 }
+
+/**
+ * Venda cancelada some para quem só opera o balcão.
+ *
+ * Decisão do dono da VM: cancelamento é assunto dele. Quem vende não precisa
+ * ver o que foi desfeito, e a lista fica limpa do que não vale mais.
+ *
+ * Quem aplica isto é a camada de dados (listarVendas/vendasRecentes), não
+ * cada tela — assim uma tela nova não nasce vazando o que deveria esconder.
+ */
+export function podeVerVendasCanceladas(papel: Papel): boolean {
+  return papel !== "SELLER";
+}

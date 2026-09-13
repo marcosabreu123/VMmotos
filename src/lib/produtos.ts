@@ -166,6 +166,97 @@ export async function criarProduto(dados: DadosProduto) {
   return prisma.produto.create({ data: dados });
 }
 
+export class ErroProduto extends Error {}
+
+/**
+ * Gera um código interno único para a peça.
+ *
+ * Numa motopeças o dono compra peça avulsa de fornecedor qualquer, muitas
+ * vezes sem código nenhum na embalagem. Obrigá-lo a inventar um SKU no
+ * balcão é a diferença entre lançar e não lançar — então o sistema inventa.
+ *
+ * Formato: as iniciais do nome + número sequencial ("PAST-0007"). Confere de
+ * fato no banco em vez de confiar no acaso, e tenta de novo se dois
+ * lançamentos caírem no mesmo código ao mesmo tempo.
+ */
+async function gerarSku(nome: string): Promise<string> {
+  const prefixo =
+    nome
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "") // tira os acentos separados pelo NFD
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, "")
+      .slice(0, 4) || "PECA";
+
+  for (let tentativa = 0; tentativa < 50; tentativa++) {
+    const ultimos = await prisma.produto.findMany({
+      where: { sku: { startsWith: `${prefixo}-` } },
+      select: { sku: true },
+    });
+
+    const maiorNumero = ultimos.reduce((maior, { sku }) => {
+      const numero = Number(sku.slice(prefixo.length + 1));
+      return Number.isFinite(numero) && numero > maior ? numero : maior;
+    }, 0);
+
+    const candidato = `${prefixo}-${String(maiorNumero + 1 + tentativa).padStart(4, "0")}`;
+    const existe = await prisma.produto.findUnique({ where: { sku: candidato } });
+    if (!existe) return candidato;
+  }
+
+  throw new ErroProduto("Não foi possível gerar um código para a peça.");
+}
+
+export type DadosPecaRapida = {
+  nome: string;
+  precoVenda: number;
+  /** centavos — normalmente o custo digitado na própria entrada. */
+  precoCustoRef?: number;
+  marca?: string;
+  categoria?: string;
+};
+
+/**
+ * Cadastra uma peça com o mínimo possível, direto do lançamento de pedido.
+ *
+ * O caminho normal (sair da entrada, abrir o cadastro completo, preencher
+ * oito campos, voltar) é caro demais para a compra avulsa de uma peça só,
+ * que é rotina nesta loja. Aqui só o nome é realmente exigido; fabricante e
+ * categoria entram como "Não informado" e o dono completa depois em Peças,
+ * se quiser.
+ */
+export async function criarPecaRapida(dados: DadosPecaRapida) {
+  const nome = dados.nome.trim();
+  if (!nome) throw new ErroProduto("Informe o nome da peça.");
+
+  if (!Number.isInteger(dados.precoVenda) || dados.precoVenda < 0) {
+    throw new ErroProduto("Preço de venda inválido.");
+  }
+
+  const custo = dados.precoCustoRef ?? 0;
+  if (!Number.isInteger(custo) || custo < 0) {
+    throw new ErroProduto("Custo inválido.");
+  }
+
+  return prisma.produto.create({
+    data: {
+      nome,
+      marca: dados.marca?.trim() || "Não informado",
+      categoria: dados.categoria?.trim() || "Não informado",
+      sku: await gerarSku(nome),
+      medida: null,
+      codigoBarras: null,
+      precoCustoRef: custo,
+      precoVenda: dados.precoVenda,
+      fornecedorId: null,
+      atributoA: null,
+      atributoB: null,
+      tipoVenda: "UNIDADE",
+      estoqueMinimo: 0,
+    },
+  });
+}
+
 export async function atualizarProduto(id: string, dados: DadosProduto) {
   return prisma.produto.update({ where: { id }, data: dados });
 }

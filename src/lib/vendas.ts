@@ -415,6 +415,13 @@ export type FiltrosVendas = {
   porPagina?: number;
   ordenarPor?: "dataHora" | "total";
   ordem?: "asc" | "desc";
+  /**
+   * Esconde vendas canceladas (Vendedor não as vê — ver
+   * podeVerVendasCanceladas). Vem como AND separado justamente para valer
+   * mesmo quando `status` foi filtrado explicitamente: pedir
+   * status=CANCELADA sem permissão devolve nada, e não a lista proibida.
+   */
+  ocultarCanceladas?: boolean;
 };
 
 export async function listarVendas(filtros: FiltrosVendas = {}) {
@@ -445,6 +452,7 @@ export async function listarVendas(filtros: FiltrosVendas = {}) {
           ],
         }
       : {}),
+    ...(filtros.ocultarCanceladas ? { AND: [{ status: { not: "CANCELADA" as const } }] } : {}),
   };
 
   const [vendas, total] = await Promise.all([

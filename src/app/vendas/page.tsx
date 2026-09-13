@@ -4,6 +4,7 @@ import { AppShell } from "@/components/AppShell";
 import { PageHeader } from "@/components/PageHeader";
 import { faturamentoPorPeriodo } from "@/lib/relatorios";
 import { vendasRecentes } from "@/lib/dashboard";
+import { podeVerVendasCanceladas } from "@/lib/permissoes";
 import { centavosParaReais } from "@/lib/money";
 import { IconVender } from "@/components/icons";
 
@@ -12,7 +13,8 @@ export default async function VendasVisaoGeralPage() {
   const [faturamentoDia, faturamentoMes, recentes] = await Promise.all([
     faturamentoPorPeriodo("dia"),
     faturamentoPorPeriodo("mes"),
-    vendasRecentes(10),
+    // Vendedor não vê venda cancelada nem na lista de recentes.
+    vendasRecentes(10, !podeVerVendasCanceladas(usuario.papel)),
   ]);
 
   return (

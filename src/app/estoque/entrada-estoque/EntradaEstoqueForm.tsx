@@ -6,6 +6,7 @@ import { FornecedorAutocomplete } from "@/components/FornecedorAutocomplete";
 import { ProdutoAutocomplete, type ProdutoBusca } from "@/components/ProdutoAutocomplete";
 import { centavosParaReais, reaisParaCentavos } from "@/lib/money";
 import { registrarEntradaEstoqueAction } from "./actions";
+import { criarPecaRapidaAction } from "./criarPeca";
 import { nicho } from "@/config/nicho";
 
 type ItemLocal = {
@@ -42,6 +43,42 @@ export function EntradaEstoqueForm({ produtoInicial }: { produtoInicial?: Produt
   );
   const [valorFreteStr, setValorFreteStr] = useState("");
   const [observacoes, setObservacoes] = useState("");
+
+  // Cadastro rápido de peça, disparado quando a busca não encontra nada.
+  const [pecaNova, setPecaNova] = useState<{
+    nome: string;
+    precoVendaStr: string;
+    erro: string | null;
+  } | null>(null);
+  const [criandoPeca, setCriandoPeca] = useState(false);
+
+  async function salvarPecaNova() {
+    if (!pecaNova) return;
+
+    const nome = pecaNova.nome.trim();
+    if (!nome) {
+      setPecaNova({ ...pecaNova, erro: "Informe o nome da peça." });
+      return;
+    }
+
+    setCriandoPeca(true);
+    const resultado = await criarPecaRapidaAction({
+      nome,
+      precoVenda: reaisParaCentavos(pecaNova.precoVendaStr || "0"),
+      // O custo de referência do cadastro nasce do custo desta compra, que é
+      // a única informação de custo que existe neste momento.
+      precoCustoRef: 0,
+    });
+    setCriandoPeca(false);
+
+    if (!resultado.ok) {
+      setPecaNova({ ...pecaNova, erro: resultado.erro });
+      return;
+    }
+
+    adicionarProduto(resultado.produto);
+    setPecaNova(null);
+  }
 
   const quantidadeTotal = useMemo(() => itens.reduce((soma, item) => soma + item.quantidade, 0), [itens]);
   const freteRateado = useMemo(() => {
@@ -148,8 +185,84 @@ export function EntradaEstoqueForm({ produtoInicial }: { produtoInicial?: Produt
       </div>
 
       <div className="card flex flex-col gap-4 p-5">
-        <p className="label">Produtos *</p>
-        <ProdutoAutocomplete onSelecionar={adicionarProduto} placeholder="Buscar produto para adicionar à entrada..." />
+        <p className="label">{nicho.termos.produto.plural} *</p>
+        <ProdutoAutocomplete
+          onSelecionar={adicionarProduto}
+          placeholder={`Buscar ${nicho.termos.produto.singular.toLowerCase()} ou digitar uma nova...`}
+          aoNaoEncontrar={{
+            rotulo: "Cadastrar peça nova:",
+            acao: (termo) => setPecaNova({ nome: termo, precoVendaStr: "", erro: null }),
+          }}
+        />
+
+        {/* Cadastro rápido: aparece quando a busca não achou a peça. A loja
+            compra peça avulsa de fornecedor qualquer o tempo todo, e mandar o
+            dono sair para o cadastro completo é o que faz o lançamento não
+            acontecer. */}
+        {pecaNova && (
+          <div className="card p-4" style={{ borderColor: "var(--accent-active-border)" }}>
+            <p className="label-caps mb-3">Peça nova</p>
+
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div>
+                <label className="label" htmlFor="peca-nova-nome">
+                  Nome
+                </label>
+                <input
+                  id="peca-nova-nome"
+                  className="input"
+                  value={pecaNova.nome}
+                  onChange={(e) => setPecaNova({ ...pecaNova, nome: e.target.value })}
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="label" htmlFor="peca-nova-venda">
+                  Preço de venda (R$)
+                </label>
+                <input
+                  id="peca-nova-venda"
+                  className="input"
+                  inputMode="decimal"
+                  placeholder="0,00"
+                  value={pecaNova.precoVendaStr}
+                  onChange={(e) => setPecaNova({ ...pecaNova, precoVendaStr: e.target.value })}
+                />
+                <p className="ajuda">Pode deixar em branco e acertar depois em Peças.</p>
+              </div>
+            </div>
+
+            {pecaNova.erro && (
+              <p className="badge badge-danger mt-3" role="alert">
+                {pecaNova.erro}
+              </p>
+            )}
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                type="button"
+                className="btn btn-primary"
+                disabled={criandoPeca}
+                onClick={salvarPecaNova}
+              >
+                {criandoPeca ? <span className="spinner" /> : "Cadastrar e adicionar"}
+              </button>
+              <button
+                type="button"
+                className="btn btn-outline"
+                disabled={criandoPeca}
+                onClick={() => setPecaNova(null)}
+              >
+                Cancelar
+              </button>
+            </div>
+
+            <p className="ajuda mt-3">
+              O código da peça é gerado sozinho. Fabricante e categoria ficam
+              como &quot;Não informado&quot; — dá para completar depois.
+            </p>
+          </div>
+        )}
 
         {itens.length === 0 ? (
           <p className="state-empty">Nenhum produto adicionado ainda.</p>
