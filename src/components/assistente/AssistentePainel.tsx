@@ -128,8 +128,7 @@ export function AssistentePainel({
             </button>
             <button
               type="button"
-              className="sidebar-close-btn"
-              style={{ display: "flex" }}
+              className="botao-fechar"
               onClick={onFechar}
               aria-label="Fechar assistente"
             >
@@ -139,9 +138,13 @@ export function AssistentePainel({
         </div>
 
         <div className="assistente-mensagens" ref={listaRef}>
+          {/* Os exemplos citavam um perfume da loja de onde este sistema
+              nasceu ("quantos Yara temos em estoque?") — numa motopeças, a
+              frase não fazia sentido nenhum. */}
           {mensagens.length === 0 && (
             <p className="state-empty">
-              Pergunte algo como &quot;quanto vendemos hoje?&quot; ou &quot;quantos Yara temos em estoque?&quot;.
+              Pergunte algo como &quot;quanto vendemos hoje?&quot; ou &quot;quantas
+              pastilhas de freio temos em estoque?&quot;.
             </p>
           )}
           {mensagens.map((mensagem, indice) => (
@@ -203,9 +206,6 @@ export function AssistentePainel({
               desabilitado={estado === "enviando" || !conversaId}
             />
           </div>
-          <p className="assistente-aviso">
-            Mensagens e áudio podem ser processados por um serviço de IA externo (OpenAI).
-          </p>
         </div>
       </aside>
     </>

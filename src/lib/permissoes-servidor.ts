@@ -23,3 +23,18 @@ export async function requireLeitura(recurso: Recurso): Promise<SessaoUsuario> {
   }
   return usuario;
 }
+
+/**
+ * Só o dono. Acima e além da matriz de recursos.
+ *
+ * Usado no que é administração do negócio e não operação: quem é mecânico,
+ * quem é sócio da oficina e quem some da lista. Decisão do dono da VM — ele
+ * administra esse cadastro, ninguém mais, nem um gerente com escrita geral.
+ */
+export async function requireDono(): Promise<SessaoUsuario> {
+  const usuario = await requireUser();
+  if (usuario.papel !== "OWNER") {
+    throw new ErroPermissao("Só o dono pode administrar este cadastro.");
+  }
+  return usuario;
+}

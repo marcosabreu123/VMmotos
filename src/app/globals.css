@@ -650,11 +650,6 @@ body {
   line-height: 1.4;
   font-family: inherit;
 }
-.assistente-aviso {
-  font-size: 11px;
-  color: var(--muted);
-  text-align: center;
-}
 
 @media (max-width: 900px) {
   .assistente-painel {
@@ -1285,4 +1280,70 @@ a.resumo-card:active {
 .acoes-secundarias a:hover {
   color: var(--foreground);
   border-bottom-color: var(--accent-active-border);
+}
+
+/* Ações de administrar uma linha de lista (mecânicos). Links-botão discretos:
+   são ações de manutenção, não a tarefa principal da tela. */
+.acoes-linha {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  font-size: 13.5px;
+}
+.acoes-linha button {
+  color: var(--muted);
+  font-weight: 500;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 4px 0;
+  border-bottom: 1px solid transparent;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+.acoes-linha button:hover:not(:disabled) {
+  color: var(--foreground);
+  border-bottom-color: var(--accent-active-border);
+}
+.acoes-linha button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+/* Destrutivo usa o coral de --danger, nunca o vermelho da marca: numa
+   interface vermelha, "excluir" precisa não parecer "salvar". */
+.acoes-linha button.acao-perigo {
+  color: var(--danger);
+}
+.acoes-linha button.acao-perigo:hover:not(:disabled) {
+  color: var(--danger);
+  border-bottom-color: var(--danger);
+}
+.acoes-linha-aviso {
+  color: var(--foreground);
+  font-weight: 600;
+}
+
+/* Botão de fechar de painel sobreposto (assistente). Era .sidebar-close-btn,
+   que sumiu junto com o menu lateral. */
+.botao-fechar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+}
+.botao-fechar:hover {
+  color: var(--foreground);
+  border-color: var(--accent-active-border);
+  background: var(--surface-muted);
 }

@@ -33,7 +33,8 @@ export function MecanicoForm() {
             <span className="font-medium">Sócio da oficina</span>
             <span className="ajuda block">
               O sócio leva 50% de toda mão de obra, mesmo a que outro mecânico
-              executa, e 100% do que ele mesmo faz. Marque uma pessoa só.
+              executa, e 100% do que ele mesmo faz. Só existe um: marcar aqui
+              passa o papel e desmarca quem era antes.
             </span>
           </span>
         </label>
