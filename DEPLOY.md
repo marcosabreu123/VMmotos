@@ -67,3 +67,15 @@ lembrar de publicar.
 
 Opcional, em **Project Settings → Domains**. Sem isso a URL fica
 `vmmotos-*.vercel.app`, que funciona igual.
+
+## Região das funções — não mexer sem motivo
+
+O `vercel.json` fixa as funções em `gru1` (São Paulo). Isso não é preferência
+estética: o banco está em `sa-east-1`, também São Paulo.
+
+Sem essa configuração, a Vercel roda as funções em `iad1` (Washington), e cada
+consulta ao banco atravessa São Paulo → Virgínia → São Paulo. Foi o que
+aconteceu: o cabeçalho `x-vercel-id` mostrava `gru1::iad1` e cada tela levava
+~2 segundos, com 6 a 8 consultas pagando ~130ms de viagem cada.
+
+Se um dia o banco mudar de região, mude esta também — as duas andam juntas.
