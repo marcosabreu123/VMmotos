@@ -1529,3 +1529,33 @@ a.resumo-card:active {
   font-size: 13.5px;
   color: var(--muted);
 }
+
+/* ---------- Leitura da foto do pedido ---------- */
+.bloco-foto {
+  padding: 18px;
+  border: 1px solid var(--accent-active-border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+/* Linha da conferência: o que a IA leu, ao lado da peça que ela casou. */
+.linha-lida {
+  padding: 11px 13px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: var(--surface-muted);
+  font-size: 14px;
+}
+.linha-lida label {
+  cursor: pointer;
+}
+/* Item que não achou peça no cadastro: apagado e não selecionável. A cor não
+   é o único sinal — a caixa vem desmarcada, desabilitada, e a linha diz o
+   motivo por escrito. */
+.linha-lida-sem-peca {
+  opacity: 0.62;
+  border-style: dashed;
+}
+.linha-lida-sem-peca label {
+  cursor: not-allowed;
+}

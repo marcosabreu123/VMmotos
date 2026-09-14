@@ -7,6 +7,7 @@ import { ProdutoAutocomplete, type ProdutoBusca } from "@/components/ProdutoAuto
 import { centavosParaReais, reaisParaCentavos } from "@/lib/money";
 import { registrarEntradaEstoqueAction } from "./actions";
 import { criarPecaRapidaAction } from "./criarPeca";
+import { LerFotoPedido, type ItemParaEntrada } from "./LerFotoPedido";
 import { nicho } from "@/config/nicho";
 
 type ItemLocal = {
@@ -105,6 +106,39 @@ export function EntradaEstoqueForm({ produtoInicial }: { produtoInicial?: Produt
     });
   }
 
+  /**
+   * Recebe os itens conferidos na foto. Soma a quantidade quando a peça já
+   * está na entrada, em vez de criar linha repetida — nota costuma trazer o
+   * mesmo item em linhas separadas.
+   */
+  function adicionarItensLidos(lidos: ItemParaEntrada[]) {
+    setMensagem(null);
+    setItens((atual) => {
+      const novo = [...atual];
+      for (const lido of lidos) {
+        const existente = novo.findIndex((i) => i.produtoId === lido.produtoId);
+        if (existente >= 0) {
+          novo[existente] = {
+            ...novo[existente],
+            quantidade: novo[existente].quantidade + lido.quantidade,
+            // Só preenche o custo se ainda estiver em branco: o que o dono
+            // digitou vale mais que o que a foto sugeriu.
+            custoUnitarioStr: novo[existente].custoUnitarioStr || lido.custoUnitarioStr,
+          };
+        } else {
+          novo.push({
+            produtoId: lido.produtoId,
+            nome: lido.nome,
+            tipoVenda: lido.tipoVenda,
+            quantidade: lido.quantidade,
+            custoUnitarioStr: lido.custoUnitarioStr,
+          });
+        }
+      }
+      return novo;
+    });
+  }
+
   function removerItem(produtoId: string) {
     setItens((atual) => atual.filter((item) => item.produtoId !== produtoId));
   }
@@ -183,6 +217,10 @@ export function EntradaEstoqueForm({ produtoInicial }: { produtoInicial?: Produt
           />
         </div>
       </div>
+
+      {/* A foto vem antes da busca: quando o dono tem a nota na mão, ler a
+          foto é o caminho curto, e digitar item a item é o caminho longo. */}
+      <LerFotoPedido aoUsar={adicionarItensLidos} aoDefinirFrete={setValorFreteStr} />
 
       <div className="card flex flex-col gap-4 p-5">
         <p className="label">{nicho.termos.produto.plural} *</p>
