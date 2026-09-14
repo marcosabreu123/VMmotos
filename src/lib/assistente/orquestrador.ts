@@ -58,6 +58,26 @@ async function limparPreviewPendente(conversaId: string) {
   });
 }
 
+/**
+ * Toma posse da prévia pendente ANTES de executá-la.
+ *
+ * O `updateMany` com a condição `previewFerramenta: nome` é atômico no banco:
+ * de dois "confirmar" que cheguem juntos, exatamente um recebe count 1 e
+ * executa; o outro recebe 0 e para.
+ *
+ * Antes disto a prévia era limpa DEPOIS de executar, e a janela entre ler e
+ * limpar era suficiente para um clique duplo, ou um retry de rede, lançar a
+ * mesma venda (ou despesa) duas vezes. A idempotência por requestId não
+ * cobria: cada clique gera um requestId novo.
+ */
+async function reivindicarPreviewPendente(conversaId: string, nomeFerramenta: string): Promise<boolean> {
+  const resultado = await prisma.assistenteConversa.updateMany({
+    where: { id: conversaId, previewFerramenta: nomeFerramenta },
+    data: { previewFerramenta: null, previewArgs: Prisma.DbNull, previewCriadoEm: null, updatedAt: new Date() },
+  });
+  return resultado.count === 1;
+}
+
 export async function processarMensagem(params: ProcessarMensagemParams): Promise<ProcessarMensagemResultado> {
   const { usuario, conversaId, texto, origemEntrada, transcricao, requestId } = params;
 
@@ -120,6 +140,26 @@ export async function processarMensagem(params: ProcessarMensagemParams): Promis
       const executor = executores[nomeFerramenta];
       const argsPendentes = (conversa.previewArgs as Record<string, unknown>) ?? {};
 
+      // Toma posse da prévia ANTES de executar. Se outro pedido já tomou (dois
+      // "confirmar" simultâneos), este para aqui em vez de lançar de novo.
+      const souEu = await reivindicarPreviewPendente(conversaId, nomeFerramenta);
+      if (!souEu) {
+        await registrarInteracaoAssistente({
+          usuarioId: usuario.id,
+          conversaId,
+          requestId,
+          mensagemOriginal: textoLimpo,
+          tipoEntrada: origemEntrada,
+          transcricao: transcricao ?? null,
+          resultadoJson: paraJsonSeguro({ resposta: "Confirmação duplicada ignorada." }) as Prisma.InputJsonValue,
+        });
+        return {
+          resposta: "Essa ação já foi confirmada — não lancei de novo.",
+          estado: "concluido",
+          aguardandoConfirmacao: false,
+        };
+      }
+
       let resultado: ToolResultado;
       if (!executor) {
         resultado = { success: false, error_code: "PREVIEW_EXPIRADA", message: "Não encontrei mais essa prévia — peça de novo, por favor." };
@@ -135,7 +175,7 @@ export async function processarMensagem(params: ProcessarMensagemParams): Promis
         }
       }
 
-      await limparPreviewPendente(conversaId);
+      // A prévia já foi limpa na reivindicação, acima.
       await registrarInteracaoAssistente({
         usuarioId: usuario.id,
         conversaId,

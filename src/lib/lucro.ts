@@ -74,11 +74,36 @@ function calcularItemLiquido(item: ItemComDevolucao) {
   };
 }
 
+/**
+ * Categoria das despesas geradas pelo fechamento da oficina.
+ *
+ * Elas ficam FORA do cálculo de lucro porque a mão de obra já foi descontada
+ * na venda (ver indicadoresLucro). Contar as duas tiraria o mesmo dinheiro
+ * duas vezes, e o dono veria um prejuízo que não existe.
+ *
+ * A despesa continua existindo e aparecendo na tela de despesas — ela é o
+ * registro real do pagamento ao mecânico, e é assim que se prova quanto foi
+ * pago e quando.
+ */
+const CATEGORIA_REPASSE_OFICINA = "Comissões";
+
 async function somaDespesasOperacionais(periodo: { inicio: Date; fim: Date }, regime: Regime): Promise<number> {
+  const foraDoLucro = { categoria: { nome: CATEGORIA_REPASSE_OFICINA } };
+
   const where: Prisma.DespesaWhereInput =
     regime === "caixa"
-      ? { status: "PAGO", dataPagamento: { gte: periodo.inicio, lte: periodo.fim }, entraNoLucroLiquido: true }
-      : { dataDespesa: { gte: periodo.inicio, lte: periodo.fim }, entraNoLucroLiquido: true, status: { not: "CANCELADO" } };
+      ? {
+          status: "PAGO",
+          dataPagamento: { gte: periodo.inicio, lte: periodo.fim },
+          entraNoLucroLiquido: true,
+          NOT: foraDoLucro,
+        }
+      : {
+          dataDespesa: { gte: periodo.inicio, lte: periodo.fim },
+          entraNoLucroLiquido: true,
+          status: { not: "CANCELADO" },
+          NOT: foraDoLucro,
+        };
 
   const resultado = await prisma.despesa.aggregate({ where, _sum: { valor: true } });
   return resultado._sum.valor ?? 0;
@@ -89,6 +114,14 @@ export type IndicadoresLucro = {
   descontos: number;
   devolucoes: number;
   faturamentoLiquido: number;
+  /**
+   * centavos — mão de obra vendida no período.
+   *
+   * Entra no faturamento (é dinheiro que passou pelo caixa) mas NÃO é lucro
+   * da loja: pertence ao pessoal da oficina. Sai antes do lucro bruto, para
+   * o que sobra ser o resultado das peças, que é o do dono.
+   */
+  maoDeObraRepasse: number;
   cmv: number;
   lucroBruto: number;
   despesasOperacionais: number;
@@ -104,17 +137,26 @@ export async function indicadoresLucro(periodo: { inicio: Date; fim: Date }, reg
 
   const vendas = await prisma.venda.findMany({
     where: { dataHora: { gte: periodo.inicio, lte: periodo.fim }, status: { in: [...STATUS_FATURAMENTO_VALIDO] } },
-    select: { subtotal: true, descontoTotal: true, itens: { select: { subtotalItem: true, custoRealSnapshot: true, quantidade: true, itensDevolvidos: { select: { quantidade: true } } } } },
+    select: {
+      subtotal: true,
+      descontoTotal: true,
+      servicos: { select: { valor: true } },
+      itens: { select: { subtotalItem: true, custoRealSnapshot: true, quantidade: true, itensDevolvidos: { select: { quantidade: true } } } },
+    },
   });
 
   let faturamentoBruto = 0;
   let descontos = 0;
   let devolucoes = 0;
   let cmv = 0;
+  let maoDeObraRepasse = 0;
 
   for (const venda of vendas) {
     faturamentoBruto += venda.subtotal;
     descontos += venda.descontoTotal;
+    for (const servico of venda.servicos) {
+      maoDeObraRepasse += servico.valor;
+    }
     for (const item of venda.itens) {
       const calc = calcularItemLiquido(item);
       devolucoes += calc.receitaAbatida;
@@ -123,9 +165,22 @@ export async function indicadoresLucro(periodo: { inicio: Date; fim: Date }, reg
   }
 
   const faturamentoLiquido = faturamentoBruto - descontos - devolucoes;
-  const lucroBruto = faturamentoLiquido - cmv;
+
+  // A mão de obra sai aqui, na venda — não quando a semana é fechada. Se
+  // dependesse do fechamento, o relatório mostraria como lucro do dono, por
+  // dias ou semanas, um dinheiro que é do mecânico.
+  //
+  // Como ela já saiu aqui, a despesa gerada pelo fechamento é EXCLUÍDA das
+  // despesas operacionais (ver somaDespesasOperacionais): contar as duas
+  // descontaria o mesmo valor duas vezes.
+  const lucroBruto = faturamentoLiquido - maoDeObraRepasse - cmv;
   const despesasOperacionais = await somaDespesasOperacionais(periodo, regime);
   const lucroLiquido = lucroBruto - despesasOperacionais;
+
+  // Margem sobre o que é da loja: faturamento sem a mão de obra. Sobre o
+  // faturamento cheio, uma venda de serviço grande afundaria a margem sem
+  // que nada tivesse piorado no negócio.
+  const baseMargem = faturamentoLiquido - maoDeObraRepasse;
 
   const qtdVendas = vendas.length;
 
@@ -134,12 +189,13 @@ export async function indicadoresLucro(periodo: { inicio: Date; fim: Date }, reg
     descontos,
     devolucoes,
     faturamentoLiquido,
+    maoDeObraRepasse,
     cmv,
     lucroBruto,
     despesasOperacionais,
     lucroLiquido,
-    margemBruta: faturamentoLiquido > 0 ? (lucroBruto / faturamentoLiquido) * 100 : 0,
-    margemLiquida: faturamentoLiquido > 0 ? (lucroLiquido / faturamentoLiquido) * 100 : 0,
+    margemBruta: baseMargem > 0 ? (lucroBruto / baseMargem) * 100 : 0,
+    margemLiquida: baseMargem > 0 ? (lucroLiquido / baseMargem) * 100 : 0,
     ticketMedio: qtdVendas > 0 ? Math.round(faturamentoLiquido / qtdVendas) : 0,
     qtdVendas,
   };

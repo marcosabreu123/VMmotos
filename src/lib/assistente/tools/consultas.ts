@@ -523,8 +523,11 @@ export const ferramentasConsulta: FerramentaAssistente[] = [
           descontos: centavosParaReais(indicadores.descontos),
           devolucoes: centavosParaReais(indicadores.devolucoes),
           faturamentoLiquido: centavosParaReais(indicadores.faturamentoLiquido),
+          // Nomes explícitos para o modelo não apresentar a mão de obra como
+          // lucro do dono ao resumir — é dinheiro que passa, não que fica.
+          maoDeObraRepassadaAoPessoalDaOficina: centavosParaReais(indicadores.maoDeObraRepasse),
           cmv: centavosParaReais(indicadores.cmv),
-          lucroBruto: centavosParaReais(indicadores.lucroBruto),
+          lucroBrutoSomenteDasPecas: centavosParaReais(indicadores.lucroBruto),
           despesasOperacionais: centavosParaReais(indicadores.despesasOperacionais),
           lucroLiquido: centavosParaReais(indicadores.lucroLiquido),
           margemBruta: `${indicadores.margemBruta.toFixed(1)}%`,

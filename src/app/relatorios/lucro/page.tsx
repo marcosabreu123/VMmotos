@@ -73,10 +73,16 @@ export default async function RelatorioLucroPage({ searchParams }: { searchParam
     { titulo: "Descontos concedidos", valor: centavosParaReais(indicadores.descontos) },
     { titulo: "Devoluções", valor: centavosParaReais(indicadores.devolucoes) },
     { titulo: "Faturamento líquido", valor: centavosParaReais(indicadores.faturamentoLiquido) },
+    // A mão de obra aparece como linha própria, abatida: é dinheiro que
+    // passou pelo caixa mas pertence ao pessoal da oficina.
+    { titulo: "Mão de obra (repasse)", valor: `- ${centavosParaReais(indicadores.maoDeObraRepasse)}` },
     { titulo: "Custo da mercadoria vendida", valor: centavosParaReais(indicadores.cmv) },
-    { titulo: "Lucro bruto", valor: centavosParaReais(indicadores.lucroBruto) },
+    { titulo: "Lucro bruto (peças)", valor: centavosParaReais(indicadores.lucroBruto) },
     { titulo: "Despesas operacionais", valor: centavosParaReais(indicadores.despesasOperacionais) },
-    { titulo: "Custo total da operação", valor: centavosParaReais(indicadores.cmv + indicadores.despesasOperacionais) },
+    {
+      titulo: "Custo total da operação",
+      valor: centavosParaReais(indicadores.cmv + indicadores.despesasOperacionais + indicadores.maoDeObraRepasse),
+    },
     { titulo: "Lucro líquido", valor: centavosParaReais(indicadores.lucroLiquido) },
     { titulo: "Margem bruta", valor: `${indicadores.margemBruta.toFixed(1)}%` },
     { titulo: "Margem líquida", valor: `${indicadores.margemLiquida.toFixed(1)}%` },
