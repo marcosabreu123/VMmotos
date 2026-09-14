@@ -4,8 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { logoutAction } from "@/app/actions";
 import { IconHome, IconLogout } from "./icons";
-import { SinoAlertas } from "./SinoAlertas";
-import type { Alerta } from "@/lib/alertas";
+import type { ReactNode } from "react";
 import { nicho } from "@/config/nicho";
 import type { SessaoUsuario } from "@/lib/types";
 import { LABEL_PAPEL } from "@/lib/permissoes";
@@ -27,7 +26,7 @@ function iniciaisDoNome(nome: string): string {
     .join("");
 }
 
-export function TopoApp({ usuario, alertas }: { usuario: SessaoUsuario; alertas: Alerta[] }) {
+export function TopoApp({ usuario, sino }: { usuario: SessaoUsuario; sino: ReactNode }) {
   const pathname = usePathname();
 
   // Na própria tela inicial o botão "Início" não faria nada — sai, e a marca
@@ -50,7 +49,7 @@ export function TopoApp({ usuario, alertas }: { usuario: SessaoUsuario; alertas:
       </Link>
 
       <div className="topo-direita">
-        <SinoAlertas alertas={alertas} />
+        {sino}
         <div className="topo-usuario">
           <p className="topo-usuario-nome">{usuario.nome}</p>
           <p className="label-caps">{LABEL_PAPEL[usuario.papel]}</p>

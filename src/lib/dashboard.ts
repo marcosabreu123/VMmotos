@@ -54,12 +54,19 @@ export async function clientesQueMaisCompraram(periodo: PeriodoRelatorio, limite
 // alertas de estoque, mais vendidos e clientes top já têm lugar próprio em /relatorios
 // (e nas telas específicas de estoque/despesas) — não duplicar aqui.
 export async function resumoDashboard() {
-  const [faturamentoDia, faturamentoMes, ticketMedioMes, recentes] = await Promise.all([
+  // ticketMedio("mes") repetia a MESMA consulta de faturamentoPorPeriodo("mes")
+  // só para dividir dois números que já estavam em mãos. Cada ida ao banco
+  // custa uma volta de rede, e esta era gratuita de cortar.
+  const [faturamentoDia, faturamentoMes, recentes] = await Promise.all([
     faturamentoPorPeriodo("dia"),
     faturamentoPorPeriodo("mes"),
-    ticketMedio("mes"),
     vendasRecentes(8, true),
   ]);
+
+  const ticketMedioMes =
+    faturamentoMes.quantidadeVendas > 0
+      ? Math.round(faturamentoMes.totalCentavos / faturamentoMes.quantidadeVendas)
+      : 0;
 
   return { faturamentoDia, faturamentoMes, ticketMedioMes, recentes };
 }

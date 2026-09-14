@@ -15,7 +15,7 @@ import type { Alerta } from "@/lib/alertas";
  * Sem alerta nenhum, o sino aparece apagado e sem número: o estado bom
  * também precisa ser visível, senão o dono fica na dúvida se a tela quebrou.
  */
-export function SinoAlertas({ alertas }: { alertas: Alerta[] }) {
+export function SinoAlertas({ alertas, carregando }: { alertas: Alerta[]; carregando?: boolean }) {
   const [aberto, setAberto] = useState(false);
   const caixaRef = useRef<HTMLDivElement>(null);
 
@@ -49,10 +49,13 @@ export function SinoAlertas({ alertas }: { alertas: Alerta[] }) {
         type="button"
         className={`sino-botao${alertas.length === 0 ? " sino-vazio" : ""}`}
         onClick={() => setAberto((a) => !a)}
+        disabled={carregando}
         aria-label={
-          alertas.length === 0
-            ? "Alertas: nada para ver"
-            : `Alertas: ${alertas.length} ${alertas.length === 1 ? "item" : "itens"}`
+          carregando
+            ? "Alertas: carregando"
+            : alertas.length === 0
+              ? "Alertas: nada para ver"
+              : `Alertas: ${alertas.length} ${alertas.length === 1 ? "item" : "itens"}`
         }
         aria-expanded={aberto}
       >
