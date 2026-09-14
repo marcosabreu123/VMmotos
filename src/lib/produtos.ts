@@ -272,3 +272,29 @@ export async function estoqueTotalProduto(produtoId: string): Promise<number> {
   });
   return resultado._sum.quantidadeAtualVenda ?? 0;
 }
+
+/**
+ * Estoque de VÁRIAS peças de uma vez.
+ *
+ * A tela de Peças chamava estoqueTotalProduto uma vez por peça listada. Com
+ * dez peças ninguém nota; com quinhentas são quinhentas consultas disparadas
+ * juntas, e o pool do Supabase tem 15 conexões — a tela passaria mais tempo
+ * na fila do que consultando.
+ *
+ * Aqui é um groupBy só. Peça sem lote ativo não volta no resultado, por isso
+ * o mapa responde 0 para quem não estiver nele.
+ */
+export async function estoqueDeVariosProdutos(produtoIds: string[]): Promise<Map<string, number>> {
+  if (produtoIds.length === 0) return new Map();
+
+  const linhas = await prisma.lote.groupBy({
+    by: ["produtoId"],
+    where: { produtoId: { in: produtoIds }, status: "ATIVO" },
+    _sum: { quantidadeAtualVenda: true },
+  });
+
+  const mapa = new Map<string, number>();
+  for (const id of produtoIds) mapa.set(id, 0);
+  for (const linha of linhas) mapa.set(linha.produtoId, linha._sum.quantidadeAtualVenda ?? 0);
+  return mapa;
+}

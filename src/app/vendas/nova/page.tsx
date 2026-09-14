@@ -3,7 +3,7 @@ import { AppShell } from "@/components/AppShell";
 import { PageHeader } from "@/components/PageHeader";
 import { CarrinhoVenda } from "@/components/CarrinhoVenda";
 import { buscarVendaPorId } from "@/lib/vendas";
-import { estoqueTotalProduto } from "@/lib/produtos";
+import { estoqueDeVariosProdutos } from "@/lib/produtos";
 import { listarMecanicos } from "@/lib/oficina/mecanicos";
 import { listarTiposServico } from "@/lib/oficina/tiposServico";
 import type { ItemCarrinhoCliente } from "@/components/CarrinhoVenda";
@@ -22,9 +22,9 @@ export default async function NovaVendaPage({
     const venda = await buscarVendaPorId(duplicar);
     if (venda) {
       const itensAtivos = venda.itens.filter((item) => item.produto.ativo);
-      const estoques = await Promise.all(itensAtivos.map((item) => estoqueTotalProduto(item.produtoId)));
+      const estoques = await estoqueDeVariosProdutos(itensAtivos.map((i) => i.produtoId));
 
-      itensIniciais = itensAtivos.map((item, indice) => ({
+      itensIniciais = itensAtivos.map((item) => ({
         quantidade: item.quantidade,
         produto: {
           id: item.produto.id,
@@ -37,7 +37,7 @@ export default async function NovaVendaPage({
           tipoVenda: item.produto.tipoVenda,
           atributoB: item.produto.atributoB,
           fotoPath: item.produto.fotoPath,
-          estoqueAtual: estoques[indice],
+          estoqueAtual: estoques.get(item.produtoId) ?? 0,
         },
       }));
     }

@@ -3,7 +3,7 @@ import { requireUser } from "@/lib/auth";
 import { AppShell } from "@/components/AppShell";
 import { PageHeader } from "@/components/PageHeader";
 import { EstoqueBadge } from "@/components/EstoqueBadge";
-import { estoqueTotalProduto, listarProdutos } from "@/lib/produtos";
+import { estoqueDeVariosProdutos, listarProdutos } from "@/lib/produtos";
 import { produtosAbaixoDoMinimo, produtosSemEstoque, valorEstoqueAtual } from "@/lib/estoque";
 import { podeVerCustos } from "@/lib/permissoes";
 import { centavosParaReais } from "@/lib/money";
@@ -58,8 +58,8 @@ export default async function ProdutosPage({
     itens = await produtosAbaixoDoMinimo();
   } else {
     const produtos = await listarProdutos(busca, filtro === "arquivados");
-    const estoques = await Promise.all(produtos.map((produto) => estoqueTotalProduto(produto.id)));
-    itens = produtos.map((produto, indice) => ({ produto, estoqueAtual: estoques[indice] }));
+    const estoques = await estoqueDeVariosProdutos(produtos.map((p) => p.id));
+    itens = produtos.map((produto) => ({ produto, estoqueAtual: estoques.get(produto.id) ?? 0 }));
   }
 
   const valorEstoque = vePrecoDeCusto && !filtro ? await valorEstoqueAtual() : null;
