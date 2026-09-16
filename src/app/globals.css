@@ -660,14 +660,22 @@ body {
 /* ---------- Tela de venda: grid de 2 colunas ---------- */
 .venda-grid {
   display: grid;
-  grid-template-columns: 1fr;
+  /* minmax(0, ...) também aqui, não só no desktop: no celular a coluna única
+     crescia até 1254px por causa do nome comprido das peças e a tela inteira
+     saía arrastando de lado. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 24px;
   align-items: start;
 }
 @media (min-width: 1024px) {
   .venda-grid {
-    grid-template-columns: 1fr 400px;
-    gap: 32px;
+    /* minmax(0, ...) e não 1fr puro: em grid, `1fr` tem largura mínima
+       automática igual ao conteúdo, e nome de peça é comprido e não quebra
+       ("caixa de direção -Nxr125/150/160Bros, XRE 190/300, NX150/200/..."),
+       então a coluna crescia até 1197px, empurrava o carrinho para fora da
+       tela e obrigava a arrastar de lado. */
+    grid-template-columns: minmax(0, 1fr) 380px;
+    gap: 28px;
   }
 }
 
@@ -701,12 +709,30 @@ body {
 .produto-resultado {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 12px;
+  gap: 12px;
+  padding: 10px 12px;
+}
+/* Marca + estoque na mesma linha, sem deixar o badge encolher. */
+.produto-resultado-sub {
+  display: flex;
+  align-items: center;
+  /* Quebra quando não couber: sem isso o badge (que não encolhe) espremia o
+     fabricante até sobrar "A...", e numa motopeças a marca é o que separa
+     uma pastilha Cobreq de uma Riffel. No desktop cabe tudo numa linha só. */
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  min-width: 0;
+  margin-top: 2px;
+  font-size: 13px;
+}
+.produto-resultado-sub .badge {
+  flex-shrink: 0;
+  font-size: 12px;
+  padding: 3px 9px;
 }
 .produto-resultado-thumb {
-  width: 52px;
-  height: 52px;
+  width: 44px;
+  height: 44px;
   border-radius: 10px;
   object-fit: cover;
   flex-shrink: 0;
@@ -1604,4 +1630,18 @@ a.resumo-card:active {
   border-color: var(--warning);
   background: var(--warning-soft);
   color: var(--warning);
+}
+
+/* Achar a peça: bipar e buscar pelo nome, lado a lado no desktop. */
+.venda-busca {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+@media (min-width: 720px) {
+  .venda-busca {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 16px;
+    align-items: end;
+  }
 }

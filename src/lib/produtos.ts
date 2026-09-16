@@ -252,6 +252,9 @@ export type DadosPecaRapida = {
   precoCustoRef?: number;
   marca?: string;
   categoria?: string;
+  /** Código bipado no lançamento — sem ele a peça nasce sem código e a
+      próxima bipada não acha. */
+  codigoBarras?: string | null;
 };
 
 /**
@@ -283,7 +286,7 @@ export async function criarPecaRapida(dados: DadosPecaRapida) {
       categoria: dados.categoria?.trim() || "Não informado",
       sku: await gerarSku(nome),
       medida: null,
-      codigoBarras: null,
+      codigoBarras: dados.codigoBarras?.trim() || null,
       precoCustoRef: custo,
       precoVenda: dados.precoVenda,
       fornecedorId: null,

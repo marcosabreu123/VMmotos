@@ -283,18 +283,35 @@ export function CarrinhoVenda({
     <div className="venda-grid">
       {/* Coluna esquerda: leitor, filtros, busca e resultados ao vivo */}
       <div>
-        <div className="mb-4">
+        {/* Bipar e buscar são a mesma tarefa — achar a peça — então ficam lado
+            a lado. Empilhados, a primeira peça da lista só aparecia 439px
+            abaixo do topo e sobrava pouca tela para o que importa. */}
+        <div className="venda-busca">
           <CampoCodigoBarras
             aoBipar={biparNaVenda}
             focoAutomatico
             rotulo="Bipe a peça"
-            ajuda="Passe o leitor no código de barras e a peça entra no carrinho. Sem leitor, busque pelo nome abaixo."
-          >
-            {respostaBipe && <RespostaBipe resposta={respostaBipe} />}
-          </CampoCodigoBarras>
+            ajuda="Com o leitor, a peça entra sozinha no carrinho."
+          />
+
+          <div>
+            <label className="label" htmlFor="busca-peca">
+              Ou busque pelo nome
+            </label>
+            <input
+              id="busca-peca"
+              value={termo}
+              onChange={(evento) => setTermo(evento.target.value)}
+              placeholder={`Nome, ${nicho.termos.marca.toLowerCase()}, código ou código de barras...`}
+              className="input"
+              autoComplete="off"
+            />
+          </div>
         </div>
 
-        <div className="mb-4 flex flex-wrap gap-2">
+        {respostaBipe && <RespostaBipe resposta={respostaBipe} />}
+
+        <div className="mb-3 mt-3 flex flex-wrap gap-2">
           {CATEGORIAS.map((opcao) => (
             <button
               key={opcao.valor}
@@ -306,14 +323,6 @@ export function CarrinhoVenda({
             </button>
           ))}
         </div>
-
-        <input
-          value={termo}
-          onChange={(evento) => setTermo(evento.target.value)}
-          placeholder={`Buscar por nome, ${nicho.termos.marca.toLowerCase()}, código ou código de barras...`}
-          className="input mb-4"
-          autoComplete="off"
-        />
 
         <div className="venda-resultados">
           {carregando ? (

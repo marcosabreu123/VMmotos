@@ -22,6 +22,8 @@ export async function criarPecaRapidaAction(dados: {
   nome: string;
   precoVenda: number;
   precoCustoRef: number;
+  /** Código bipado no lançamento, quando a peça ainda não existia. */
+  codigoBarras?: string | null;
 }): Promise<ResultadoPecaRapida> {
   let usuario;
   try {

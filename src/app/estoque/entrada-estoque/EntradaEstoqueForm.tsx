@@ -8,6 +8,8 @@ import { centavosParaReais, reaisParaCentavos } from "@/lib/money";
 import { registrarEntradaEstoqueAction } from "./actions";
 import { criarPecaRapidaAction } from "./criarPeca";
 import { LerFotoPedido, type ItemParaEntrada } from "./LerFotoPedido";
+import { CampoCodigoBarras } from "@/components/CampoCodigoBarras";
+import { biparParaEntradaAction } from "@/app/produtos/codigoBarras";
 import { nicho } from "@/config/nicho";
 
 type ItemLocal = {
@@ -50,8 +52,34 @@ export function EntradaEstoqueForm({ produtoInicial }: { produtoInicial?: Produt
     nome: string;
     precoVendaStr: string;
     erro: string | null;
+    /** Preenchido quando a peça nasceu de uma bipada que não achou nada. */
+    codigoBarras?: string | null;
   } | null>(null);
   const [criandoPeca, setCriandoPeca] = useState(false);
+  const [avisoBipe, setAvisoBipe] = useState<string | null>(null);
+
+  /**
+   * Bipada no lançamento de pedido.
+   *
+   * Peça conhecida vira linha da entrada na hora. Peça desconhecida abre o
+   * cadastro rápido JÁ com o código preso a ela — senão a peça nasceria sem
+   * código e a próxima bipada não acharia de novo.
+   */
+  async function biparNaEntrada(codigo: string) {
+    setAvisoBipe(null);
+    const resultado = await biparParaEntradaAction(codigo);
+
+    if (resultado.ok) {
+      adicionarProduto(resultado.produto);
+      setAvisoBipe(`${resultado.produto.nome} adicionada.`);
+      return;
+    }
+
+    setAvisoBipe(resultado.mensagem);
+    if (resultado.motivo === "desconhecido") {
+      setPecaNova({ nome: "", precoVendaStr: "", erro: null, codigoBarras: codigo });
+    }
+  }
 
   async function salvarPecaNova() {
     if (!pecaNova) return;
@@ -69,6 +97,9 @@ export function EntradaEstoqueForm({ produtoInicial }: { produtoInicial?: Produt
       // O custo de referência do cadastro nasce do custo desta compra, que é
       // a única informação de custo que existe neste momento.
       precoCustoRef: 0,
+      // Quando a peça nasceu de uma bipada, o código vai junto — senão a
+      // próxima bipada não acharia a peça que acabou de ser cadastrada.
+      codigoBarras: pecaNova.codigoBarras ?? null,
     });
     setCriandoPeca(false);
 
@@ -224,6 +255,17 @@ export function EntradaEstoqueForm({ produtoInicial }: { produtoInicial?: Produt
 
       <div className="card flex flex-col gap-4 p-5">
         <p className="label">{nicho.termos.produto.plural} *</p>
+
+        {/* Bipar entra peça conhecida direto na lista. Recebendo mercadoria o
+            dono tem as peças na mão, uma a uma — é o mesmo gesto da venda. */}
+        <CampoCodigoBarras
+          aoBipar={biparNaEntrada}
+          rotulo="Bipe a peça que chegou"
+          ajuda="Peça já cadastrada entra na lista. Se não estiver, abre o cadastro rápido com o código."
+        >
+          {avisoBipe && <div className="bipe-resposta">{avisoBipe}</div>}
+        </CampoCodigoBarras>
+
         <ProdutoAutocomplete
           onSelecionar={adicionarProduto}
           placeholder={`Buscar ${nicho.termos.produto.singular.toLowerCase()} ou digitar uma nova...`}

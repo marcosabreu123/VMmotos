@@ -41,6 +41,53 @@ export async function biparParaVendaAction(codigo: string): Promise<ResultadoBip
   return { status: "desconhecido", codigo: limpo };
 }
 
+export type ResultadoBipeEntrada =
+  | { ok: true; produto: { id: string; nome: string; marca: string; sku: string; precoVenda: number; tipoVenda: "UNIDADE" | "FRACIONADO" } }
+  | { ok: false; motivo: "desconhecido" | "arquivada" | "erro"; mensagem: string };
+
+/**
+ * Bipada no lançamento de pedido.
+ *
+ * Separada da venda porque a permissão é outra: aqui quem entra mercadoria é
+ * quem mexe em estoque, não quem vende. Também não devolve estoque atual — na
+ * entrada o que interessa é o que está chegando.
+ */
+export async function biparParaEntradaAction(codigo: string): Promise<ResultadoBipeEntrada> {
+  try {
+    await requireEscrita("estoque");
+  } catch (erro) {
+    if (erro instanceof ErroPermissao) return { ok: false, motivo: "erro", mensagem: erro.message };
+    throw erro;
+  }
+
+  const limpo = codigo.trim();
+  if (!limpo) return { ok: false, motivo: "erro", mensagem: "Código vazio." };
+
+  const produto = await buscarPorCodigoExato(limpo);
+  if (!produto) {
+    return { ok: false, motivo: "desconhecido", mensagem: `Código ${limpo} não está cadastrado.` };
+  }
+  if (!produto.ativo) {
+    return {
+      ok: false,
+      motivo: "arquivada",
+      mensagem: `${produto.nome} está arquivada. Reative antes de dar entrada — não cadastre de novo.`,
+    };
+  }
+
+  return {
+    ok: true,
+    produto: {
+      id: produto.id,
+      nome: produto.nome,
+      marca: produto.marca,
+      sku: produto.sku,
+      precoVenda: produto.precoVenda,
+      tipoVenda: produto.tipoVenda,
+    },
+  };
+}
+
 export type ResultadoConferencia =
   | { status: "livre" }
   | { status: "em_uso"; produtoId: string; nome: string; ativo: boolean }
