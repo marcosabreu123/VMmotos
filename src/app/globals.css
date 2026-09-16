@@ -684,11 +684,24 @@ body {
   flex-direction: column;
   gap: 16px;
 }
-@media (min-width: 1024px) {
+/* O carrinho só fica preso no topo em tela ALTA o bastante para ele caber
+   inteiro (~880px de conteúdo com mão de obra e pagamento).
+Em notebook, que quase sempre tem menos de 900px de altura, ele volta a
+   rolar junto com a página.
+
+   Antes era preso em qualquer tela larga, com a altura travada em 100vh e sem
+   rolagem própria — e só a lista do carrinho rolava por dentro. Pagamento,
+   total e o botão "Finalizar venda" ficam ABAIXO dessa lista, então numa tela
+   de 700px de altura o botão caía em 894px e não havia gesto nenhum que
+   chegasse nele: a venda simplesmente não fechava. */
+@media (min-width: 1024px) and (min-height: 900px) {
   .venda-painel {
     position: sticky;
     top: 24px;
     max-height: calc(100vh - 48px);
+    /* Rede de segurança para quando o carrinho cresce muito (vários serviços)
+       mesmo numa tela alta. */
+    overflow-y: auto;
   }
 }
 
@@ -696,7 +709,8 @@ body {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  overflow-y: auto;
+  /* Sem rolagem própria: quem rola é o painel inteiro. Duas áreas de rolagem
+     encaixadas faziam a roda do mouse parar na lista e nunca chegar ao fim. */
   min-height: 0;
 }
 
