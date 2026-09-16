@@ -1559,3 +1559,49 @@ a.resumo-card:active {
 .linha-lida-sem-peca label {
   cursor: not-allowed;
 }
+
+/* Campo do leitor de código de barras. O ícone à esquerda existe para o dono
+   reconhecer de longe onde bipar, sem ler nada. */
+.campo-codigo-linha {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.campo-codigo-icone {
+  position: absolute;
+  left: 14px;
+  display: inline-flex;
+  align-items: center;
+  color: var(--accent);
+  pointer-events: none;
+}
+.campo-codigo-input {
+  padding-left: 46px;
+  /* Código de barras é sequência sem palavra: espaçado fica bem mais fácil de
+     conferir contra o número impresso na embalagem. */
+  letter-spacing: 0.06em;
+}
+
+/* Resposta da bipada, logo abaixo do campo. */
+.bipe-resposta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 11px 13px;
+  border-radius: 11px;
+  border: 1px solid var(--border);
+  background: var(--surface-muted);
+  font-size: 14px;
+}
+.bipe-resposta-ok {
+  border-color: var(--success);
+  background: var(--success-soft);
+  color: var(--success);
+}
+.bipe-resposta-aviso {
+  border-color: var(--warning);
+  background: var(--warning-soft);
+  color: var(--warning);
+}

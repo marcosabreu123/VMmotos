@@ -86,6 +86,7 @@ export default async function EditarProdutoPage({
           fornecedores={fornecedores}
           tipoVendaBloqueado={produto.lotes.length > 0}
           podeVerCustos={podeVerCusto}
+          produtoIdAtual={produto.id}
           valoresIniciais={{
             nome: produto.nome,
             marca: produto.marca,

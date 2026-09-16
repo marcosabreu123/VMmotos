@@ -347,3 +347,16 @@ export function IconSino(props: SVGProps<SVGSVGElement>) {
     </Svg>
   );
 }
+
+export function IconCodigoBarras(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Svg {...props}>
+      {/* Só as barras: em 20px qualquer moldura em volta vira borrão. */}
+      <path d="M4 5v14" />
+      <path d="M8 5v14" />
+      <path d="M12 5v14" />
+      <path d="M16 5v14" />
+      <path d="M20 5v14" />
+    </Svg>
+  );
+}

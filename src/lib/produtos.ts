@@ -53,13 +53,51 @@ export async function buscarProdutoPorSku(sku: string) {
   return prisma.produto.findUnique({ where: { sku } });
 }
 
-export async function buscarPorSkuOuCodigoBarras(termo: string) {
-  return prisma.produto.findFirst({
-    where: {
-      ativo: true,
-      OR: [{ sku: termo }, { codigoBarras: termo }],
-    },
-  });
+/**
+ * Acha a peça pelo código de barras ou pelo código interno, exigindo valor
+ * EXATO. É o que o leitor de código de barras usa.
+ *
+ * Busca aproximada não serve aqui: o leitor bipa e a peça entra direto na
+ * venda, sem ninguém conferir a lista. Um "parecido" viraria peça errada
+ * vendida — melhor não achar nada e avisar.
+ *
+ * Não filtra por `ativo` de propósito. Quem chama decide o que fazer com peça
+ * arquivada, e o cadastro precisa enxergar código já usado por peça arquivada
+ * — senão o @unique do banco derruba o salvamento com um erro que não explica
+ * nada para quem está no balcão.
+ */
+export async function buscarPorCodigoExato(codigo: string) {
+  const limpo = codigo.trim();
+  if (!limpo) return null;
+
+  // Código de barras primeiro: é o que o leitor mandou. Os dois campos são
+  // @unique, então findUnique resolve cada um sem ambiguidade.
+  const porBarras = await prisma.produto.findUnique({ where: { codigoBarras: limpo } });
+  if (porBarras) return porBarras;
+
+  return prisma.produto.findUnique({ where: { sku: limpo } });
+}
+
+/** A mesma busca exata, no formato que a tela de venda consome. */
+export async function buscarParaVendaPorCodigo(codigo: string): Promise<ProdutoParaVenda | null> {
+  const produto = await buscarPorCodigoExato(codigo);
+  if (!produto || !produto.ativo) return null;
+
+  const estoques = await estoqueDeVariosProdutos([produto.id]);
+  return {
+    id: produto.id,
+    nome: produto.nome,
+    marca: produto.marca,
+    categoria: produto.categoria,
+    sku: produto.sku,
+    codigoBarras: produto.codigoBarras,
+    medida: produto.medida,
+    precoVenda: produto.precoVenda,
+    tipoVenda: produto.tipoVenda,
+    atributoB: produto.atributoB,
+    fotoPath: produto.fotoPath,
+    estoqueAtual: estoques.get(produto.id) ?? 0,
+  };
 }
 
 export type ProdutoParaVenda = {

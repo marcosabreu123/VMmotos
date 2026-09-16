@@ -5,7 +5,7 @@ import { ProdutoResultCard, type ProdutoVenda } from "./ProdutoResultCard";
 import { ClienteSelector } from "./ClienteSelector";
 import { ItemCarrinhoRow } from "./ItemCarrinhoRow";
 import { FormaPagamentoPicker } from "./FormaPagamentoPicker";
-import { IconCheck } from "./icons";
+import { IconCheck, IconAlerta } from "./icons";
 import { centavosParaReais, reaisParaCentavos } from "@/lib/money";
 import type { ClienteBusca } from "./ClienteAutocomplete";
 import type { FormaPagamento } from "@/lib/types";
@@ -18,6 +18,8 @@ import {
   type DadosMoto,
 } from "./MaoDeObraVenda";
 import { nicho } from "@/config/nicho";
+import { CampoCodigoBarras } from "./CampoCodigoBarras";
+import { biparParaVendaAction, type ResultadoBipe } from "@/app/produtos/codigoBarras";
 
 export type ItemCarrinhoCliente = {
   produto: ProdutoVenda;
@@ -32,6 +34,61 @@ const CATEGORIAS: Array<{ valor: string; label: string }> = [
 
 function hojeISO() {
   return new Date().toISOString().slice(0, 10);
+}
+
+/**
+ * Retorno da bipada.
+ *
+ * Quem bipa está olhando a peça na mão, não a tela — então a resposta precisa
+ * dizer o NOME do que entrou. Confirmar só com um "ok" verde deixaria passar
+ * batido o código trocado de embalagem, que é justamente o erro que o leitor
+ * não protege contra.
+ */
+function RespostaBipe({ resposta }: { resposta: ResultadoBipe }) {
+  if (resposta.status === "achou") {
+    const semEstoque = resposta.produto.estoqueAtual <= 0;
+    return (
+      <div className={`bipe-resposta ${semEstoque ? "bipe-resposta-aviso" : "bipe-resposta-ok"}`}>
+        {/* Visto verde dentro de caixa amarela se contradiz — sem estoque é alerta. */}
+        {semEstoque ? <IconAlerta /> : <IconCheck />}
+        <span>
+          <strong>{resposta.produto.nome}</strong> · {centavosParaReais(resposta.produto.precoVenda)}
+          {semEstoque && " — sem estoque, confira antes de fechar"}
+        </span>
+      </div>
+    );
+  }
+
+  if (resposta.status === "arquivada") {
+    return (
+      <div className="bipe-resposta bipe-resposta-aviso">
+        <span>
+          <strong>{resposta.nome}</strong> está arquivada. Reative em {nicho.termos.produto.plural} antes de vender —
+          não cadastre de novo.
+        </span>
+      </div>
+    );
+  }
+
+  if (resposta.status === "desconhecido") {
+    return (
+      <div className="bipe-resposta bipe-resposta-aviso">
+        <span>Código {resposta.codigo} não está cadastrado.</span>
+        {/* Abre em outra aba de propósito: sair daqui esvaziaria o carrinho
+            que o dono já montou. */}
+        <a
+          className="btn btn-outline"
+          href={`/produtos/novo?codigo=${encodeURIComponent(resposta.codigo)}`}
+          target="_blank"
+          rel="noopener"
+        >
+          Cadastrar em outra aba
+        </a>
+      </div>
+    );
+  }
+
+  return <div className="bipe-resposta bipe-resposta-aviso">{resposta.mensagem}</div>;
 }
 
 export function CarrinhoVenda({
@@ -63,6 +120,7 @@ export function CarrinhoVenda({
   const [pagouTudo, setPagouTudo] = useState(true);
   const [valorPagoStr, setValorPagoStr] = useState("");
   const [mensagem, setMensagem] = useState<{ tipo: "erro" | "sucesso"; texto: string } | null>(null);
+  const [respostaBipe, setRespostaBipe] = useState<ResultadoBipe | null>(null);
   const [pendente, iniciarTransicao] = useTransition();
 
   useEffect(() => {
@@ -113,6 +171,18 @@ export function CarrinhoVenda({
   const valorPago = pagouTudo ? total : reaisParaCentavos(valorPagoStr || "0");
   const saldoDevedor = Math.max(0, total - valorPago);
   const valorPagoInvalido = !pagouTudo && (valorPago < 0 || valorPago > total);
+
+  /**
+   * Bipada na venda: acha a peça pelo código exato e joga no carrinho.
+   *
+   * O leitor devolve o foco para o campo sozinho, então dá para bipar uma peça
+   * atrás da outra sem tocar no mouse — que é o ponto de ter leitor.
+   */
+  async function biparNaVenda(codigo: string) {
+    const resposta = await biparParaVendaAction(codigo);
+    setRespostaBipe(resposta);
+    if (resposta.status === "achou") adicionarProduto(resposta.produto);
+  }
 
   function adicionarProduto(produto: ProdutoVenda) {
     setMensagem(null);
@@ -211,8 +281,19 @@ export function CarrinhoVenda({
 
   return (
     <div className="venda-grid">
-      {/* Coluna esquerda: filtros, busca e resultados ao vivo */}
+      {/* Coluna esquerda: leitor, filtros, busca e resultados ao vivo */}
       <div>
+        <div className="mb-4">
+          <CampoCodigoBarras
+            aoBipar={biparNaVenda}
+            focoAutomatico
+            rotulo="Bipe a peça"
+            ajuda="Passe o leitor no código de barras e a peça entra no carrinho. Sem leitor, busque pelo nome abaixo."
+          >
+            {respostaBipe && <RespostaBipe resposta={respostaBipe} />}
+          </CampoCodigoBarras>
+        </div>
+
         <div className="mb-4 flex flex-wrap gap-2">
           {CATEGORIAS.map((opcao) => (
             <button

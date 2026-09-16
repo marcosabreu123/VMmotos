@@ -1,7 +1,9 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import type { EstadoProduto } from "@/app/produtos/actions";
+import { conferirCodigoAction, type ResultadoConferencia } from "@/app/produtos/codigoBarras";
+import { CampoCodigoBarras } from "./CampoCodigoBarras";
 import { nicho, rotuloMedida, usaVendaFracionada } from "@/config/nicho";
 
 type FornecedorOpcao = { id: string; nome: string };
@@ -31,14 +33,28 @@ export function ProdutoForm({
   valoresIniciais,
   tipoVendaBloqueado = false,
   podeVerCustos = true,
+  codigoInicial,
+  produtoIdAtual,
 }: {
   action: (estado: EstadoProduto, formData: FormData) => Promise<EstadoProduto>;
   fornecedores: FornecedorOpcao[];
   valoresIniciais?: ValoresIniciais;
   tipoVendaBloqueado?: boolean;
   podeVerCustos?: boolean;
+  /** Código bipado na venda, quando a peça não existia e o dono veio cadastrar. */
+  codigoInicial?: string;
+  /** Na edição, o próprio código da peça não conta como conflito. */
+  produtoIdAtual?: string;
 }) {
   const [estado, formAction, pendente] = useActionState(action, ESTADO_INICIAL);
+  const [conferencia, setConferencia] = useState<ResultadoConferencia | null>(null);
+
+  // Bipou no cadastro: antes de deixar salvar, diz se esse código já é de
+  // outra peça. Sem isso o dono só descobre no "não foi possível salvar",
+  // depois de ter digitado a ficha inteira.
+  async function conferirCodigo(codigo: string) {
+    setConferencia(await conferirCodigoAction(codigo, produtoIdAtual));
+  }
 
   return (
     <form action={formAction} className="card flex flex-col gap-4 p-6">
@@ -145,17 +161,33 @@ export function ProdutoForm({
               justamente o atrito que fazia o cadastro não acontecer. */}
           <p className="ajuda">Deixe em branco para o sistema gerar.</p>
         </div>
-        <div>
-          <label className="label" htmlFor="codigoBarras">
-            Código de barras
-          </label>
-          <input
-            id="codigoBarras"
-            name="codigoBarras"
-            defaultValue={valoresIniciais?.codigoBarras ?? undefined}
-            className="input"
-          />
-        </div>
+        <CampoCodigoBarras
+          nome="codigoBarras"
+          valorInicial={valoresIniciais?.codigoBarras ?? codigoInicial ?? ""}
+          limparAposBipar={false}
+          focoAutomatico={!!codigoInicial}
+          rotulo="Código de barras"
+          ajuda="Bipe a embalagem com o leitor, ou deixe em branco."
+          aoBipar={conferirCodigo}
+        >
+          {conferencia?.status === "em_uso" && (
+            <div className="bipe-resposta bipe-resposta-aviso">
+              <span>
+                Esse código já é de <strong>{conferencia.nome}</strong>
+                {!conferencia.ativo && " (arquivada)"}.
+              </span>
+              <a className="btn btn-outline" href={`/produtos/${conferencia.produtoId}`}>
+                Abrir essa {nicho.termos.produto.singular.toLowerCase()}
+              </a>
+            </div>
+          )}
+          {conferencia?.status === "livre" && (
+            <div className="bipe-resposta bipe-resposta-ok">Código livre.</div>
+          )}
+          {conferencia?.status === "erro" && (
+            <div className="bipe-resposta bipe-resposta-aviso">{conferencia.mensagem}</div>
+          )}
+        </CampoCodigoBarras>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
