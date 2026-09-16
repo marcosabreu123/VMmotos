@@ -355,10 +355,19 @@ async function ajustarEstoqueTx(tx: Prisma.TransactionClient, dados: DadosAjuste
   }
 
   const delta = ehPositivo ? { increment: dados.quantidade } : { decrement: dados.quantidade };
-  await tx.lote.update({
-    where: { id: lote.id },
-    data: ehVenda ? { quantidadeAtualVenda: delta } : { quantidadeAtualDemonstracao: delta },
+
+  // Mesma trava da venda: a conferência acima foi feita sobre uma leitura que
+  // pode ter envelhecido. Levar a condição de saldo dentro do UPDATE faz o
+  // banco reavaliá-la com a linha travada, e uma baixa concorrente perde em
+  // vez de deixar o estoque negativo.
+  const campo = ehVenda ? "quantidadeAtualVenda" : "quantidadeAtualDemonstracao";
+  const atualizados = await tx.lote.updateMany({
+    where: { id: lote.id, ...(ehPositivo ? {} : { [campo]: { gte: dados.quantidade } }) },
+    data: { [campo]: delta },
   });
+  if (atualizados.count !== 1) {
+    throw new ErroEstoque("O estoque mudou durante a operação. Confira a quantidade e tente de novo.");
+  }
 
   await tx.movimentacaoEstoque.create({
     data: {
@@ -388,16 +397,52 @@ export async function ajustarEstoquePorProduto(dados: {
   if (dados.quantidade <= 0) throw new ErroEstoque("Quantidade inválida.");
 
   return prisma.$transaction(async (tx) => {
-    const quantidadeMinima = dados.tipo === "AJUSTE_POSITIVO" ? 0 : dados.quantidade;
-    const lote = await resolverLoteAlvo(tx, dados.produtoId, dados.pool, quantidadeMinima);
-    return ajustarEstoqueTx(tx, {
-      loteId: lote.id,
-      pool: dados.pool,
-      tipo: dados.tipo,
-      quantidade: dados.quantidade,
-      motivo: dados.motivo,
-      usuarioId: dados.usuarioId,
+    // Somar sobra vai para um lote só — é uma correção de contagem e não faz
+    // sentido espalhar. Tirar percorre vários lotes.
+    if (dados.tipo === "AJUSTE_POSITIVO") {
+      const lote = await resolverLoteAlvo(tx, dados.produtoId, dados.pool, 0);
+      return ajustarEstoqueTx(tx, {
+        loteId: lote.id,
+        pool: dados.pool,
+        tipo: dados.tipo,
+        quantidade: dados.quantidade,
+        motivo: dados.motivo,
+        usuarioId: dados.usuarioId,
+      });
+    }
+
+    // A baixa percorre os lotes pela mesma razão da venda: o estoque da loja
+    // nasce picado (3 de uma compra, 4 de outra), e exigir um lote único com o
+    // saldo inteiro recusava tirar 5 peças tendo 7 na prateleira.
+    const campo = dados.pool === "VENDA" ? "quantidadeAtualVenda" : "quantidadeAtualDemonstracao";
+    const lotes = await tx.lote.findMany({
+      where: { produtoId: dados.produtoId, status: "ATIVO", [campo]: { gt: 0 } },
+      orderBy: [{ dataValidade: { sort: "asc", nulls: "last" } }, { createdAt: "asc" }],
     });
+
+    const disponivel = lotes.reduce((soma, lote) => soma + lote[campo], 0);
+    if (disponivel < dados.quantidade) {
+      throw new ErroEstoque(
+        `Só há ${disponivel} em estoque — não dá para dar baixa de ${dados.quantidade}.`
+      );
+    }
+
+    let falta = dados.quantidade;
+
+    for (const lote of lotes) {
+      if (falta <= 0) break;
+      const tirar = Math.min(falta, lote[campo]);
+      await ajustarEstoqueTx(tx, {
+        loteId: lote.id,
+        pool: dados.pool,
+        tipo: dados.tipo,
+        quantidade: tirar,
+        motivo: dados.motivo,
+        usuarioId: dados.usuarioId,
+      });
+      falta -= tirar;
+    }
+
   });
 }
 

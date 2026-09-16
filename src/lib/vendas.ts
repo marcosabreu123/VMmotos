@@ -56,31 +56,52 @@ export type DadosVenda = {
 
 export class ErroVenda extends Error {}
 
-// FEFO: prioriza o lote ATIVO com validade mais próxima; produtos sem nenhum lote
-// com validade caem no FIFO por data de criação. O split automático de uma venda
-// entre múltiplos lotes fica fora de escopo — se um lote não tiver saldo suficiente,
-// pede-se para o vendedor lançar a diferença como uma segunda linha no carrinho.
-async function encontrarLoteFEFO(tx: Prisma.TransactionClient, produtoId: string, quantidadeMinima: number) {
-  const comValidade = await tx.lote.findFirst({
-    where: {
-      produtoId,
-      status: "ATIVO",
-      quantidadeAtualVenda: { gte: quantidadeMinima },
-      dataValidade: { not: null },
-    },
-    orderBy: { dataValidade: "asc" },
+/**
+ * Separa a quantidade pedida percorrendo os lotes em FEFO (validade mais
+ * próxima primeiro) e, entre os sem validade, FIFO por data de entrada.
+ *
+ * Percorre VÁRIOS lotes de propósito. A loja compra a mesma peça de novo toda
+ * semana, então o estoque nasce picado: 3 de uma compra, 4 de outra. Antes a
+ * venda exigia um lote único com o saldo inteiro e recusava vender 5 tendo 7 —
+ * e a saída que a mensagem sugeria (lançar em duas linhas) não existia, porque
+ * o carrinho soma a mesma peça na mesma linha. Ou seja: venda perdida com a
+ * peça na prateleira.
+ *
+ * Cada pedaço vira um ItemVenda com o custo do SEU lote, o que também deixa o
+ * lucro mais correto do que quando tudo era debitado de um lote só.
+ */
+async function separarLotesFEFO(
+  tx: Prisma.TransactionClient,
+  produtoId: string,
+  quantidade: number
+): Promise<Array<{ loteId: string; custoReal: number; quantidade: number }> | null> {
+  const lotes = await tx.lote.findMany({
+    where: { produtoId, status: "ATIVO", quantidadeAtualVenda: { gt: 0 } },
+    orderBy: [{ dataValidade: { sort: "asc", nulls: "last" } }, { createdAt: "asc" }],
   });
-  if (comValidade) return comValidade;
 
-  return tx.lote.findFirst({
-    where: {
-      produtoId,
-      status: "ATIVO",
-      quantidadeAtualVenda: { gte: quantidadeMinima },
-      dataValidade: null,
-    },
-    orderBy: { createdAt: "asc" },
-  });
+  const separado: Array<{ loteId: string; custoReal: number; quantidade: number }> = [];
+  let falta = quantidade;
+
+  for (const lote of lotes) {
+    if (falta <= 0) break;
+    const tirar = Math.min(falta, lote.quantidadeAtualVenda);
+    separado.push({ loteId: lote.id, custoReal: lote.custoReal, quantidade: tirar });
+    falta -= tirar;
+  }
+
+  return falta > 0 ? null : separado;
+}
+
+/** Divide um valor em partes proporcionais; a última absorve o arredondamento. */
+function ratear(valor: number, pesos: number[]): number[] {
+  const total = pesos.reduce((s, p) => s + p, 0);
+  if (total <= 0) return pesos.map(() => 0);
+
+  const partes = pesos.map((p) => Math.floor((valor * p) / total));
+  const sobra = valor - partes.reduce((s, p) => s + p, 0);
+  partes[partes.length - 1] += sobra;
+  return partes;
 }
 
 export async function registrarVenda(dados: DadosVenda) {
@@ -164,18 +185,13 @@ export async function registrarVenda(dados: DadosVenda) {
         throw new ErroVenda("Produto não encontrado ou inativo.");
       }
 
-      const lote = await encontrarLoteFEFO(tx, item.produtoId, item.quantidade);
+      const separado = await separarLotesFEFO(tx, item.produtoId, item.quantidade);
 
-      if (!lote) {
+      if (!separado) {
         throw new ErroVenda(
-          `Estoque insuficiente em um único lote para "${produto.nome}" (quantidade pedida: ${item.quantidade}). Divida em mais de uma linha no carrinho ou dê entrada de estoque.`
+          `Estoque insuficiente para "${produto.nome}" (quantidade pedida: ${item.quantidade}). Dê entrada de estoque antes de vender.`
         );
       }
-
-      await tx.lote.update({
-        where: { id: lote.id },
-        data: { quantidadeAtualVenda: { decrement: item.quantidade } },
-      });
 
       const descontoItem = item.descontoItem ?? 0;
       const precoUnitario = item.precoUnitario ?? produto.precoVenda;
@@ -188,15 +204,35 @@ export async function registrarVenda(dados: DadosVenda) {
       }
       subtotal += subtotalItem;
 
-      itensParaCriar.push({
-        produtoId: item.produtoId,
-        loteId: lote.id,
-        quantidade: item.quantidade,
-        precoUnitario,
-        descontoItem,
-        custoRealSnapshot: lote.custoReal,
-        subtotalItem,
-      });
+      // Um desconto de item vale para a peça inteira, não para um lote; é
+      // rateado pelas quantidades para que a soma das linhas continue exata.
+      const descontosPorLote = ratear(descontoItem, separado.map((s) => s.quantidade));
+
+      for (const [indice, pedaco] of separado.entries()) {
+        // Decremento CONDICIONAL: a condição de saldo vai junto no UPDATE, e é
+        // o banco que a reavalia com a linha travada. Um update simples deixava
+        // duas vendas simultâneas da última peça passarem as duas — as duas
+        // liam "tem 1" antes de qualquer uma gravar, e o estoque ia a -1.
+        const atualizados = await tx.lote.updateMany({
+          where: { id: pedaco.loteId, quantidadeAtualVenda: { gte: pedaco.quantidade } },
+          data: { quantidadeAtualVenda: { decrement: pedaco.quantidade } },
+        });
+        if (atualizados.count !== 1) {
+          throw new ErroVenda(
+            `O estoque de "${produto.nome}" mudou enquanto esta venda era fechada. Confira a quantidade e lance de novo.`
+          );
+        }
+
+        itensParaCriar.push({
+          produtoId: item.produtoId,
+          loteId: pedaco.loteId,
+          quantidade: pedaco.quantidade,
+          precoUnitario,
+          descontoItem: descontosPorLote[indice],
+          custoRealSnapshot: pedaco.custoReal,
+          subtotalItem: precoUnitario * pedaco.quantidade - descontosPorLote[indice],
+        });
+      }
     }
 
     const subtotalPecas = subtotal;

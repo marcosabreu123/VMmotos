@@ -81,6 +81,12 @@ export default async function ProdutosPage({
         <Link href="/produtos/novo" className="btn btn-outline">
           + Nova peça
         </Link>
+        {/* Sobe de link de texto para botão: tirar peça do estoque (quebrou,
+            sumiu, foi de brinde) é rotina, e como link discreto passava
+            despercebido — a impressão era de que a função não existia. */}
+        <Link href="/estoque/ajuste" className="btn btn-outline">
+          − Dar baixa
+        </Link>
         {vePrecoDeCusto && (
           <Link href="/produtos/precos" className="btn btn-outline">
             Preços e margem
@@ -106,7 +112,6 @@ export default async function ProdutosPage({
           discretas, sem competir com "Lançar pedido". */}
       <div className="acoes-secundarias">
         <Link href="/estoque/inventario">Conferir estoque</Link>
-        <Link href="/estoque/ajuste">Ajustar estoque</Link>
         <Link href="/estoque/lotes">Lotes</Link>
         <Link href="/estoque/insumos">Insumos</Link>
         <Link href="/estoque/entrada-estoque/historico">Histórico de entradas</Link>

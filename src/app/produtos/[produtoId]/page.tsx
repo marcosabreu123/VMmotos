@@ -13,7 +13,7 @@ import { podeVerCustos } from "@/lib/permissoes";
 import { BotaoAlternarAtivo } from "@/components/BotaoAlternarAtivo";
 import { atualizarProdutoAction, alterarAtivoProdutoAction } from "../actions";
 import type { TipoMovimentacao } from "@prisma/client";
-import { nicho } from "@/config/nicho";
+import { nicho, usaDemonstracao, rotuloDemonstracao } from "@/config/nicho";
 
 const TIPOS_ENTRADA: TipoMovimentacao[] = ["ENTRADA_ESTOQUE", "ENTRADA_COMPRA", "ENTRADA_MANUAL"];
 const TIPOS_VENDA: TipoMovimentacao[] = ["SAIDA_VENDA", "DEVOLUCAO", "ESTORNO_CANCELAMENTO"];
@@ -66,6 +66,12 @@ export default async function EditarProdutoPage({
               <Link href={`/estoque/entrada-estoque?produtoId=${produto.id}`} className="btn btn-outline">
                 Dar entrada de estoque
               </Link>
+              {/* Existia botão para somar estoque e nenhum para tirar — a tela
+                  de baixa estava só num link de texto entre outros oito, e por
+                  isso passava como se não existisse. */}
+              <Link href={`/estoque/ajuste?produtoId=${produto.id}`} className="btn btn-outline">
+                Dar baixa no estoque
+              </Link>
               <Link href={`/produtos/${produto.id}/etiqueta`} className="btn btn-outline">
                 Imprimir etiqueta
               </Link>
@@ -112,10 +118,14 @@ export default async function EditarProdutoPage({
               <p className="label-caps mb-1">Quantidade atual</p>
               <p className="text-xl font-bold">{formatQuantidadeEstoque(quantidadeAtual, produto.tipoVenda)}</p>
             </div>
-            <div className="card p-4">
-              <p className="label-caps mb-1">Demonstracao</p>
-              <p className="text-xl font-bold">{formatQuantidadeEstoque(quantidadeDemonstracao, produto.tipoVenda)}</p>
-            </div>
+            {/* Mostruário é recurso do molde e está desligado nesta loja —
+                o quadro só mostrava um zero eterno. */}
+            {usaDemonstracao && (
+              <div className="card p-4">
+                <p className="label-caps mb-1">{rotuloDemonstracao}</p>
+                <p className="text-xl font-bold">{formatQuantidadeEstoque(quantidadeDemonstracao, produto.tipoVenda)}</p>
+              </div>
+            )}
             {podeVerCusto && (
               <div className="card p-4">
                 <p className="label-caps mb-1">Margem</p>
@@ -193,10 +203,13 @@ export default async function EditarProdutoPage({
           )}
         </section>
 
+        {/* Mesma razão do quadro acima: sem mostruário nesta loja, esta seção
+            nunca teria linha nenhuma. */}
+        {usaDemonstracao && (
         <section className="mt-8">
-          <h2 className="mb-3 text-lg font-semibold">Demonstracao</h2>
+          <h2 className="mb-3 text-lg font-semibold">{rotuloDemonstracao}</h2>
           {movimentacoesDemonstracao.length === 0 ? (
-            <p className="state-empty">Nenhuma movimentação de demonstracao registrada ainda.</p>
+            <p className="state-empty">Nenhuma movimentação registrada ainda.</p>
           ) : (
             <ul className="flex flex-col gap-2">
               {movimentacoesDemonstracao.map((mov) => (
@@ -214,6 +227,7 @@ export default async function EditarProdutoPage({
             </ul>
           )}
         </section>
+        )}
     </AppShell>
   );
 }
