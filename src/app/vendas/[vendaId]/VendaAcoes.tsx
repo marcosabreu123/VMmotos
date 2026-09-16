@@ -290,7 +290,7 @@ export function VendaAcoes({
           <ul className="flex flex-col gap-3">
             {insumosDisponiveis.map((insumo) => (
               <li key={insumo.id} className="flex items-center gap-3">
-                <span className="flex-1">
+                <span className="min-w-0 flex-1 break-words">
                   {insumo.nome} ({insumo.unidade})
                 </span>
                 <input
@@ -359,7 +359,7 @@ export function VendaAcoes({
               if (disponivel <= 0) return null;
               return (
                 <li key={item.id} className="flex flex-wrap items-center gap-3">
-                  <span className="flex-1">{item.produtoNome}</span>
+                  <span className="min-w-0 flex-1 break-words">{item.produtoNome}</span>
                   <input
                     type="number"
                     min={0}

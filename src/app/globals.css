@@ -1659,3 +1659,22 @@ a.resumo-card:active {
     align-items: end;
   }
 }
+
+/* O "Voltar" é um <button> (usa o histórico), o "Início" é um link — os dois
+   precisam parecer o mesmo botão. */
+button.topo-inicio {
+  color: var(--foreground);
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* Em tela estreita o topo já carrega marca, sino, nome e sair. O "Início"
+   encolhe para só o ícone e o "Voltar", que é o mais usado, mantém a palavra. */
+@media (max-width: 720px) {
+  .topo-inicio-texto {
+    display: none;
+  }
+  .topo-inicio-secundario {
+    padding-inline: 10px;
+  }
+}

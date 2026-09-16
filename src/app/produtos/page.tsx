@@ -165,13 +165,17 @@ export default async function ProdutosPage({
                     sem foto
                   </div>
                 )}
-                <div className="flex-1">
-                  <p className="font-semibold">{produto.nome}</p>
-                  <p className="text-sm" style={{ color: "var(--muted)" }}>
+                {/* min-w-0 e truncate: sem eles o nome comprido da peça
+                    ("caixa de direção -Nxr125/150/160Bros, XRE 190/300...")
+                    nao deixava a coluna encolher e empurrava o preço para
+                    fora da tela no celular. */}
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-semibold">{produto.nome}</p>
+                  <p className="truncate text-sm" style={{ color: "var(--muted)" }}>
                     {produto.marca} · {produto.categoria} · {produto.sku}
                   </p>
                 </div>
-                <div className="flex flex-col items-end gap-1">
+                <div className="flex shrink-0 flex-col items-end gap-1">
                   <span className="font-semibold">{centavosParaReais(produto.precoVenda)}</span>
                   <EstoqueBadge
                     estoqueAtual={estoqueAtual}

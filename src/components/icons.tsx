@@ -360,3 +360,12 @@ export function IconCodigoBarras(props: SVGProps<SVGSVGElement>) {
     </Svg>
   );
 }
+
+export function IconVoltar(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Svg {...props}>
+      <path d="M19 12H5" />
+      <path d="M11 6l-6 6 6 6" />
+    </Svg>
+  );
+}
