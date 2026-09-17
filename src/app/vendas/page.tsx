@@ -4,6 +4,7 @@ import { AppShell } from "@/components/AppShell";
 import { PageHeader } from "@/components/PageHeader";
 import { faturamentoPorPeriodo } from "@/lib/relatorios";
 import { vendasRecentes } from "@/lib/dashboard";
+import { resumirVenda } from "@/lib/vendas";
 import { podeVerVendasCanceladas } from "@/lib/permissoes";
 import { centavosParaReais } from "@/lib/money";
 import { IconVender } from "@/components/icons";
@@ -61,14 +62,16 @@ export default async function VendasVisaoGeralPage() {
         <ul className="flex flex-col gap-2">
           {recentes.map((venda) => (
             <li key={venda.id}>
-              <Link href={`/vendas/${venda.id}`} className="card card-interactive flex items-center justify-between p-4">
-                <span>
+              <Link href={`/vendas/${venda.id}`} className="card card-interactive flex items-center justify-between gap-4 p-4">
+                <span className="min-w-0">
                   <span className="font-medium">{venda.cliente?.nome ?? "Cliente não identificado"}</span>{" "}
                   <span className="text-sm" style={{ color: "var(--muted)" }}>
-                    · {venda.itens.length} item(ns) · {venda.dataHora.toLocaleString("pt-BR")}
+                    · {venda.dataHora.toLocaleString("pt-BR")}
                   </span>
+                  {/* O que foi vendido, sem precisar abrir a venda. */}
+                  <span className="venda-itens">{resumirVenda(venda).join(" · ")}</span>
                 </span>
-                <span className="font-semibold">{centavosParaReais(venda.total)}</span>
+                <span className="shrink-0 font-semibold">{centavosParaReais(venda.total)}</span>
               </Link>
             </li>
           ))}

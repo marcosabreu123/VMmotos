@@ -1,5 +1,6 @@
 import { prisma } from "./db";
 import { inicioDoPeriodo, faturamentoPorPeriodo, type PeriodoRelatorio } from "./relatorios";
+import { INCLUDE_RESUMO_VENDA } from "./vendas";
 
 // Vendas que ainda contam como faturamento válido para os indicadores — canceladas e
 // devolvidas totalmente saem da conta.
@@ -18,7 +19,9 @@ export async function vendasRecentes(limite = 8, excluirCanceladas = false) {
     where: excluirCanceladas ? { status: { not: "CANCELADA" } } : undefined,
     take: limite,
     orderBy: { dataHora: "desc" },
-    include: { cliente: true, usuario: true, itens: true },
+    // Traz o nome das peças: a lista mostra o que foi vendido sem precisar
+    // abrir a venda.
+    include: INCLUDE_RESUMO_VENDA,
   });
 }
 

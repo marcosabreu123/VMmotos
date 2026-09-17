@@ -1678,3 +1678,15 @@ button.topo-inicio {
     padding-inline: 10px;
   }
 }
+
+/* Nomes das peças na lista de vendas. Uma linha só: a lista serve para bater
+   o olho e reconhecer a venda, não para ler o cupom inteiro. */
+.venda-itens {
+  display: block;
+  margin-top: 3px;
+  font-size: 13px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

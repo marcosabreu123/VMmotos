@@ -2,7 +2,7 @@ import Link from "next/link";
 import { requireLeitura } from "@/lib/permissoes-servidor";
 import { AppShell } from "@/components/AppShell";
 import { PageHeader } from "@/components/PageHeader";
-import { listarVendas, type FiltrosVendas } from "@/lib/vendas";
+import { listarVendas, resumirVenda, type FiltrosVendas } from "@/lib/vendas";
 import { listarUsuarios } from "@/lib/usuarios";
 import { inicioDoPeriodo } from "@/lib/relatorios";
 import { podeVerVendasCanceladas } from "@/lib/permissoes";
@@ -161,12 +161,13 @@ export default async function HistoricoVendasPage({
               <span className="w-40 text-sm" style={{ color: "var(--muted)" }}>
                 {venda.dataHora.toLocaleString("pt-BR")}
               </span>
-              <span className="flex-1 font-medium">{venda.cliente?.nome ?? "Sem cliente"}</span>
-              <span className="text-sm" style={{ color: "var(--muted)" }}>
-                {venda.usuario.nome}
+              <span className="min-w-0 flex-1">
+                <span className="font-medium">{venda.cliente?.nome ?? "Sem cliente"}</span>
+                {/* O que foi vendido, sem precisar abrir a venda. */}
+                <span className="venda-itens">{resumirVenda(venda).join(" · ")}</span>
               </span>
-              <span className="text-sm" style={{ color: "var(--muted)" }}>
-                {venda.itens.length} item(ns)
+              <span className="shrink-0 text-sm" style={{ color: "var(--muted)" }}>
+                {venda.usuario.nome}
               </span>
               <span className="text-sm" style={{ color: "var(--muted)" }}>
                 {LABEL_PAGAMENTO[venda.formaPagamento]}

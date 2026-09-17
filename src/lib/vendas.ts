@@ -588,6 +588,52 @@ export async function buscarVendaPorId(id: string) {
   });
 }
 
+/** O que a listagem precisa incluir para conseguir mostrar os nomes. */
+export const INCLUDE_RESUMO_VENDA = {
+  cliente: true,
+  usuario: true,
+  itens: { include: { produto: { select: { nome: true } } } },
+  servicos: { select: { descricao: true } },
+} as const;
+
+export type VendaResumivel = {
+  itens: Array<{ produtoId: string; quantidade: number; produto: { nome: string } }>;
+  servicos?: Array<{ descricao: string }>;
+};
+
+/**
+ * Nomes do que foi vendido, para aparecer na lista sem precisar abrir a venda.
+ *
+ * Agrupa por peça, e isso NÃO é enfeite: desde que a venda passou a atravessar
+ * lotes, 5 unidades tiradas de dois lotes viram duas linhas no banco. Sem
+ * agrupar, a lista mostraria "3× Pastilha · 2× Pastilha" como se fossem peças
+ * diferentes — e o contador de itens mentiria junto.
+ */
+export function resumirVenda(venda: VendaResumivel): string[] {
+  const porProduto = new Map<string, { nome: string; quantidade: number }>();
+
+  for (const item of venda.itens) {
+    const atual = porProduto.get(item.produtoId);
+    if (atual) atual.quantidade += item.quantidade;
+    else porProduto.set(item.produtoId, { nome: item.produto.nome, quantidade: item.quantidade });
+  }
+
+  const partes = [...porProduto.values()].map((p) => `${p.quantidade}× ${p.nome}`);
+
+  // Mão de obra entra junto: venda só de serviço é rotina na oficina, e sem
+  // isso a linha ficaria vazia.
+  for (const servico of venda.servicos ?? []) {
+    if (servico.descricao.trim()) partes.push(servico.descricao.trim());
+  }
+
+  return partes;
+}
+
+/** Quantas peças DIFERENTES a venda tem (não quantas linhas de lote). */
+export function contarItensDaVenda(venda: VendaResumivel): number {
+  return new Set(venda.itens.map((item) => item.produtoId)).size;
+}
+
 export type FiltrosVendas = {
   dataInicio?: Date;
   dataFim?: Date;
@@ -647,7 +693,7 @@ export async function listarVendas(filtros: FiltrosVendas = {}) {
   const [vendas, total] = await Promise.all([
     prisma.venda.findMany({
       where,
-      include: { cliente: true, usuario: true, itens: true },
+      include: INCLUDE_RESUMO_VENDA,
       orderBy: { [filtros.ordenarPor ?? "dataHora"]: filtros.ordem ?? "desc" },
       skip: (pagina - 1) * porPagina,
       take: porPagina,
