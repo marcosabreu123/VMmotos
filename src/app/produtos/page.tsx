@@ -104,6 +104,24 @@ export default async function ProdutosPage({
                 {valorEstoque.margemPotencial.toFixed(1)}% de margem se tudo vender pelo preço cheio
               </p>
             </div>
+
+            {/* Quanto do dinheiro dele está parado na prateleira. O lucro
+                potencial sozinho não diz isso — R$ 30 mil de lucro futuro
+                soa diferente sabendo que R$ 24 mil já saíram do caixa. */}
+            <div>
+              <p className="label-caps mb-1">Custo do estoque</p>
+              <p className="resumo-valor resumo-valor-secundario">
+                {centavosParaReais(valorEstoque.valorCustoTotal)}
+              </p>
+              <p className="ajuda">
+                {valorEstoque.unidadesTotais} un. em {valorEstoque.produtosComEstoque}{" "}
+                {(valorEstoque.produtosComEstoque === 1
+                  ? nicho.termos.produto.singular
+                  : nicho.termos.produto.plural
+                ).toLowerCase()}{" "}
+                · dinheiro investido
+              </p>
+            </div>
           </div>
         </section>
       )}

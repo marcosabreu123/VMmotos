@@ -1768,3 +1768,9 @@ button.topo-inicio {
   padding: 10px 12px;
   font-size: 15px;
 }
+/* Segundo número do mesmo card: presente, mas claramente coadjuvante do
+   principal — menor e em tinta secundária. */
+.resumo-valor-secundario {
+  font-size: clamp(20px, 4vw, 26px);
+  color: var(--muted);
+}
