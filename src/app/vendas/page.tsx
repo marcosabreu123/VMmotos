@@ -1,5 +1,8 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { requireLeitura } from "@/lib/permissoes-servidor";
+import { faturamentoDiario } from "@/lib/relatorios";
+import { GraficoFaturamento } from "@/components/GraficoFaturamento";
 import { AppShell } from "@/components/AppShell";
 import { PageHeader } from "@/components/PageHeader";
 import { faturamentoPorPeriodo } from "@/lib/relatorios";
@@ -8,6 +11,11 @@ import { resumirVenda } from "@/lib/vendas";
 import { podeVerVendasCanceladas } from "@/lib/permissoes";
 import { centavosParaReais } from "@/lib/money";
 import { IconVender } from "@/components/icons";
+
+async function GraficoCarregado() {
+  const pontos = await faturamentoDiario();
+  return <GraficoFaturamento pontos={pontos} />;
+}
 
 export default async function VendasVisaoGeralPage() {
   const usuario = await requireLeitura("vendas");
@@ -48,6 +56,15 @@ export default async function VendasVisaoGeralPage() {
           <p className="text-xl font-bold">{faturamentoMes.quantidadeVendas}</p>
         </div>
       </section>
+
+      {/* O gráfico vem depois dos quadros: eles respondem "quanto hoje", ele
+          responde "como vem vindo". Em Suspense próprio para a consulta do
+          período longo não segurar a tela, que o dono abre o dia inteiro. */}
+      <div className="mb-8">
+        <Suspense fallback={<div className="card grafico-carregando p-5" />}>
+          <GraficoCarregado />
+        </Suspense>
+      </div>
 
       <div className="mb-6 flex items-center justify-between">
         <h2 className="label-caps">Vendas recentes</h2>

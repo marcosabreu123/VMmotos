@@ -1690,3 +1690,81 @@ button.topo-inicio {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* ---- Gráfico de faturamento por dia ---- */
+.grafico-topo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+.grafico-total {
+  font-family: var(--font-serif), "Arial Narrow", system-ui, sans-serif;
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+.grafico-caixa {
+  position: relative;
+  width: 100%;
+}
+/* Eixos recessivos: informam, não competem com a linha. */
+.grafico-eixo {
+  font-size: 11px;
+  fill: var(--muted);
+}
+.grafico-melhor {
+  font-size: 12px;
+  font-weight: 600;
+  fill: var(--muted);
+}
+.grafico-tooltip {
+  position: absolute;
+  top: 4px;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface-muted);
+  box-shadow: var(--shadow-card);
+  pointer-events: none;
+  white-space: nowrap;
+}
+.grafico-tooltip strong {
+  font-size: 16px;
+  color: var(--foreground);
+}
+.grafico-tooltip span {
+  font-size: 12px;
+  color: var(--muted);
+}
+/* Espaço reservado do gráfico enquanto a consulta chega: a tela não pula. */
+.grafico-carregando {
+  height: 322px;
+}
+
+/* Campos do período personalizado. Ficam abaixo dos atalhos, e não dentro da
+   linha deles: são dois campos, não mais um botão. */
+.grafico-datas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.grafico-datas label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 150px;
+  flex: 1 1 150px;
+  max-width: 220px;
+}
+.grafico-datas .input {
+  padding: 10px 12px;
+  font-size: 15px;
+}
